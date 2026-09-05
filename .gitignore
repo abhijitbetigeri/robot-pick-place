@@ -43,3 +43,4 @@ out/
 public/assets/sim/_scene_generated.xml
 # regenerate with scripts/marble_to_mjcf.py
 public/assets/sim/*.obj
+public/assets/sim/assets/

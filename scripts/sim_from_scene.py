@@ -78,8 +78,24 @@ def pick_surfaces(objects: list) -> tuple:
     return ranked[0], ranked[1]
 
 
-def obj_geom(o: dict) -> str:
-    """A staged object becomes a static box collider with its authored physics."""
+ASSET_MANIFEST = Path("public/assets/sim/assets.json")
+
+
+def load_assets() -> dict:
+    """Generated Tripo/Mint assets converted by scripts/assets_to_sim.py."""
+    if ASSET_MANIFEST.exists():
+        return json.loads(ASSET_MANIFEST.read_text())
+    return {}
+
+
+def obj_geom(o: dict, assets: dict) -> str:
+    """
+    A staged object becomes geometry in the sim.
+
+    With a generated asset available it renders as the real mesh and collides
+    via a proxy; otherwise it falls back to the authored box. The fallback is
+    deliberate - the sim must still run before any assets are generated.
+    """
     p, d, s = o["position"], o["dimensions"], o["scale"]
     hw = d["width"] * s["x"] / 2.0
     hh = d["height"] * s["y"] / 2.0
@@ -87,10 +103,39 @@ def obj_geom(o: dict) -> str:
     # Studio is Y-up (three.js); MuJoCo is Z-up.
     x, y, z = p["x"], -p["z"], p["y"] + hh
     fr = o["physics"].get("friction", [0.8, 0.01, 0.001])
-    rgba = "0.55 0.45 0.36 1"
-    return (f'    <geom name="obj_{o["objectId"]}" type="box" '
-            f'pos="{x:.3f} {y:.3f} {z:.3f}" size="{hw:.3f} {hd:.3f} {hh:.3f}" '
-            f'friction="{fr[0]} {fr[1]} {fr[2]}" rgba="{rgba}"/>')
+    name = f'obj_{o["objectId"]}'
+    rec = assets.get(o["assetId"])
+
+    if rec is None:
+        return (f'    <geom name="{name}" type="box" '
+                f'pos="{x:.3f} {y:.3f} {z:.3f}" size="{hw:.3f} {hd:.3f} {hh:.3f}" '
+                f'friction="{fr[0]} {fr[1]} {fr[2]}" rgba="0.55 0.45 0.36 1"/>')
+
+    # Real generated geometry, sitting on the floor (mesh origin is at its base).
+    base_z = p["y"]
+    mesh = f'mesh_{o["assetId"]}'
+    out = (f'    <geom name="{name}_visual" type="mesh" mesh="{mesh}" '
+           f'pos="{x:.3f} {y:.3f} {base_z:.3f}" contype="0" conaffinity="0" group="1"/>')
+
+    if rec["collision"]["mode"] == "shelf":
+        # A shelf's convex hull is a solid block - there would be nowhere to
+        # put the book. Collide as uprights plus a top slab instead.
+        surf = rec["collision"]["surface_z"]
+        t = 0.03
+        out += (
+            f'\n    <geom name="{name}_top" type="box" '
+            f'pos="{x:.3f} {y:.3f} {base_z + surf:.3f}" '
+            f'size="{hw:.3f} {hd:.3f} {t}" '
+            f'friction="{fr[0]} {fr[1]} {fr[2]}" rgba="0.5 0.4 0.3 0.25"/>'
+            f'\n    <geom name="{name}_back" type="box" '
+            f'pos="{x:.3f} {y + hd - 0.04:.3f} {base_z + hh:.3f}" '
+            f'size="{hw:.3f} 0.04 {hh:.3f}" rgba="0.5 0.4 0.3 0.15"/>'
+        )
+    else:
+        out += (f'\n    <geom name="{name}_col" type="mesh" mesh="{mesh}" '
+                f'pos="{x:.3f} {y:.3f} {base_z:.3f}" '
+                f'friction="{fr[0]} {fr[1]} {fr[2]}" rgba="0 0 0 0"/>')
+    return out
 
 
 def marble_assets(name: str, sim_dir: Path):
@@ -129,7 +174,12 @@ def build_mjcf(scene: dict, src: dict, dst: dict, marble: str | None,
     book_x, book_y = src["position"]["x"], -src["position"]["z"]
     book_z = src_top + BOOK_SIZE[2] + SURFACE_CLEARANCE
 
-    geoms = "\n".join(obj_geom(o) for o in scene["objects"])
+    assets = load_assets()
+    used = {o["assetId"] for o in scene["objects"] if o["assetId"] in assets}
+    for aid in sorted(used):
+        mesh_asset += (f'\n    <mesh name="mesh_{aid}" '
+                       f'file="assets/{Path(assets[aid]["obj"]).name}"/>')
+    geoms = "\n".join(obj_geom(o, assets) for o in scene["objects"])
 
     return f"""
 <mujoco model="staged_scene_{scene.get('shareId','scene')}">
@@ -363,8 +413,11 @@ def main() -> int:
     xml, grasp_pt, place_pt = build_mjcf(scene, src, dst, args.marble, sim_dir)
 
     # MuJoCo resolves <mesh file=...> relative to the model dir.
-    model = (mujoco.MjModel.from_xml_string(xml, {}) if not args.marble
-             else mujoco.MjModel.from_xml_path(str(_write_tmp(xml, sim_dir))))
+    # <mesh file=...> resolves relative to the model file, so whenever any mesh
+    # is referenced the XML has to live beside public/assets/sim/.
+    needs_files = bool(args.marble) or "<mesh " in xml
+    model = (mujoco.MjModel.from_xml_path(str(_write_tmp(xml, sim_dir)))
+             if needs_files else mujoco.MjModel.from_xml_string(xml, {}))
     data = mujoco.MjData(model)
     eq_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_EQUALITY, "grasp")
 
