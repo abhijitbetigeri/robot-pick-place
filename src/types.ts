@@ -18,7 +18,7 @@ export interface Robot {
 
 export interface Bridge {
   _id?: string;
-  bridgeId: string; // "Bridge_Alpha" | "Bridge_Beta"
+  bridgeId: string;
   name: string;
   isBlocked: boolean;
   closureReason?: string;
@@ -42,4 +42,23 @@ export interface Waypoint {
   y: number;
   z: number;
   type: "depot" | "fork" | "bridge_alpha" | "bridge_beta" | "goal";
+}
+
+export interface ScenarioDef {
+  id: string;
+  title: string;
+  subtitle: string;
+  worldId: string;
+  marbleUrl: string;
+  primaryName: string;
+  detourName: string;
+  incidentType: string;
+  incidentTitle: string;
+  primaryDistance: string;
+  detourDistance: string;
+  delayAvoided: string;
+  delaySeconds: number;
+  waterChannelLabel: string;
+  hubStartLabel: string;
+  hubGoalLabel: string;
 }
