@@ -1,18 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { CinematicViewport3D } from './components/CinematicViewport3D';
-import { Robot, Bridge, ScenarioDef } from './types';
+import { ScenarioDef } from './types';
 import { Radio, ExternalLink, Sparkles } from 'lucide-react';
 
 const SCENARIOS: Record<string, ScenarioDef> = {
   sf_mission_creek: {
     id: "sf_mission_creek",
     title: "SF Mission Creek Bridges",
-    subtitle: "Two parallel drawbridges crossing canal (4th St & 3rd St)",
+    subtitle: "Two parallel drawbridges crossing Mission Creek canal: 4th St (Bascule) & 3rd St (Scherzer Lift)",
     worldId: "272b9f6e-5c61-4729-9511-faf551e139de",
     marbleUrl: "https://marble.worldlabs.ai/world/272b9f6e-5c61-4729-9511-faf551e139de",
     environmentType: "waterway_bridges",
-    primaryName: "4th St Bridge",
-    detourName: "3rd St Bridge",
+    primaryName: "4th St Bridge (Alpha)",
+    detourName: "3rd St Bridge (Beta)",
     incidentType: "MAINTENANCE_DRAWBRIDGE_LIFT",
     incidentTitle: "Drawbridge Lifted for Tugboat",
     primaryDistance: "88m",
@@ -20,8 +20,8 @@ const SCENARIOS: Record<string, ScenarioDef> = {
     delayAvoided: "8m 30s",
     delaySeconds: 510,
     waterChannelLabel: "≈ MISSION CREEK CANAL WATERWAY ≈",
-    hubStartLabel: "South Depot",
-    hubGoalLabel: "North Goal",
+    hubStartLabel: "South Depot (China Basin)",
+    hubGoalLabel: "North Goal (Oracle Park Hub)",
     positions: {
       start: { x: 0.0, y: -30.0, z: 0.0 },
       fork: { x: 0.0, y: -12.0, z: 0.0 },
@@ -39,21 +39,21 @@ const SCENARIOS: Record<string, ScenarioDef> = {
   nyc_soho: {
     id: "nyc_soho",
     title: "NYC Soho Urban Canyon",
-    subtitle: "Historic cobblestone alleyway vs Broadway avenue detour",
+    subtitle: "High-density Manhattan block: Mercer St narrow alleyway vs Broadway Avenue detour",
     worldId: "7e7a2603-0c27-4939-9c9b-2be271fa85f2",
     marbleUrl: "https://marble.worldlabs.ai/world/7e7a2603-0c27-4939-9c9b-2be271fa85f2",
     environmentType: "urban_grid",
-    primaryName: "Mercer St Alley",
-    detourName: "Broadway Avenue",
+    primaryName: "Mercer St Alleyway",
+    detourName: "Broadway Avenue Corridor",
     incidentType: "UTILITY_TRENCH_COLLAPSE",
-    incidentTitle: "Utility Trench Roadwork",
+    incidentTitle: "Utility Trench Roadwork Hazard",
     primaryDistance: "65m",
     detourDistance: "110m",
     delayAvoided: "11m 45s",
     delaySeconds: 705,
     waterChannelLabel: "🏙️ SOHO URBAN CORRIDOR 🏙️",
-    hubStartLabel: "Soho Hub",
-    hubGoalLabel: "Delivery Hub",
+    hubStartLabel: "Soho Micro-Hub",
+    hubGoalLabel: "Delivery Hub (Spring St)",
     positions: {
       start: { x: 0.0, y: -32.0, z: 0.0 },
       fork: { x: 0.0, y: -16.0, z: 0.0 },
@@ -70,22 +70,22 @@ const SCENARIOS: Record<string, ScenarioDef> = {
   },
   port_logistics: {
     id: "port_logistics",
-    title: "Automated Port Terminal",
-    subtitle: "Heavy AGV freight lanes between container stacks",
+    title: "Automated Port Container Terminal",
+    subtitle: "Heavy AGV freight lanes between container stacks (Gantry crane Bay Alpha vs Bay Beta)",
     worldId: "c6359220-4637-4a19-841e-d55cea097dd6",
     marbleUrl: "https://marble.worldlabs.ai/world/c6359220-4637-4a19-841e-d55cea097dd6",
     environmentType: "port_depot",
     primaryName: "Gantry Bay Alpha",
-    detourName: "Yard Bay Beta",
+    detourName: "Stacking Yard Bay Beta",
     incidentType: "GANTRY_CONTAINER_SPILL",
-    incidentTitle: "Fallen 40ft Container",
+    incidentTitle: "Overturned 40ft Container Blockade",
     primaryDistance: "90m",
     detourDistance: "140m",
     delayAvoided: "14m 20s",
     delaySeconds: 860,
     waterChannelLabel: "🚢 AGV FREIGHT LANES 🚢",
-    hubStartLabel: "Berth 12",
-    hubGoalLabel: "Railhead Terminal",
+    hubStartLabel: "Berth 12 AGV Staging",
+    hubGoalLabel: "Intermodal Freight Terminal",
     positions: {
       start: { x: -15.0, y: -30.0, z: 0.0 },
       fork: { x: -15.0, y: -12.0, z: 0.0 },
@@ -104,242 +104,21 @@ const SCENARIOS: Record<string, ScenarioDef> = {
 
 export function App() {
   const [currentScenarioId, setCurrentScenarioId] = useState<string>("sf_mission_creek");
+  const [isBridgeBlocked, setIsBridgeBlocked] = useState<boolean>(false);
   const scenario = SCENARIOS[currentScenarioId] || SCENARIOS["sf_mission_creek"];
-  const pos = scenario.positions;
-
-  const [bridges, setBridges] = useState<Bridge[]>([
-    {
-      bridgeId: "Bridge_Alpha",
-      name: scenario.primaryName,
-      isBlocked: false,
-      costMultiplier: 1.0,
-      updatedAt: Date.now(),
-    },
-    {
-      bridgeId: "Bridge_Beta",
-      name: scenario.detourName,
-      isBlocked: false,
-      costMultiplier: 1.0,
-      updatedAt: Date.now(),
-    },
-  ]);
-
-  const [robots, setRobots] = useState<Robot[]>([
-    {
-      robotId: "Rover_1",
-      role: "LEAD_SCOUT",
-      position: pos.start,
-      heading: 90,
-      status: "IDLE",
-      activeRoute: "VIA_BRIDGE_ALPHA",
-      destination: scenario.hubGoalLabel,
-      updatedAt: Date.now(),
-    },
-    {
-      robotId: "Rover_2",
-      role: "DELIVERY_UNIT",
-      position: { x: pos.start.x, y: pos.start.y - 4.0, z: pos.start.z },
-      heading: 90,
-      status: "IDLE",
-      activeRoute: "VIA_BRIDGE_ALPHA",
-      destination: scenario.hubGoalLabel,
-      updatedAt: Date.now(),
-    },
-  ]);
-
-  const [simStep, setSimStep] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
-  const [delayAvoided, setDelayAvoided] = useState(0);
-
-  const autoRunTimerRef = useRef<any>(null);
 
   const handleSelectScenario = (id: string) => {
-    const sc = SCENARIOS[id];
-    if (!sc) return;
     setCurrentScenarioId(id);
-    setIsRunning(false);
-    if (autoRunTimerRef.current) clearInterval(autoRunTimerRef.current);
-    setSimStep(0);
-    setDelayAvoided(0);
-    const p = sc.positions;
-    setBridges([
-      {
-        bridgeId: "Bridge_Alpha",
-        name: sc.primaryName,
-        isBlocked: false,
-        costMultiplier: 1.0,
-        updatedAt: Date.now(),
-      },
-      {
-        bridgeId: "Bridge_Beta",
-        name: sc.detourName,
-        isBlocked: false,
-        costMultiplier: 1.0,
-        updatedAt: Date.now(),
-      },
-    ]);
-    setRobots([
-      {
-        robotId: "Rover_1",
-        role: "LEAD_SCOUT",
-        position: p.start,
-        heading: 90,
-        status: "IDLE",
-        activeRoute: "VIA_BRIDGE_ALPHA",
-        destination: sc.hubGoalLabel,
-        updatedAt: Date.now(),
-      },
-      {
-        robotId: "Rover_2",
-        role: "DELIVERY_UNIT",
-        position: { x: p.start.x, y: p.start.y - 4.0, z: p.start.z },
-        heading: 90,
-        status: "IDLE",
-        activeRoute: "VIA_BRIDGE_ALPHA",
-        destination: sc.hubGoalLabel,
-        updatedAt: Date.now(),
-      },
-    ]);
+    setIsBridgeBlocked(false);
   };
 
-  const handleToggleBridge = (bridgeId: string) => {
-    setBridges(prev => prev.map(b => {
-      if (b.bridgeId === bridgeId) {
-        return {
-          ...b,
-          isBlocked: !b.isBlocked,
-          costMultiplier: !b.isBlocked ? 999.0 : 1.0,
-          updatedAt: Date.now(),
-        };
-      }
-      return b;
-    }));
+  const handleToggleBridge = () => {
+    setIsBridgeBlocked(!isBridgeBlocked);
   };
-
-  const handleReset = () => {
-    setIsRunning(false);
-    if (autoRunTimerRef.current) clearInterval(autoRunTimerRef.current);
-    setSimStep(0);
-    setBridges(prev => prev.map(b => ({ ...b, isBlocked: false, costMultiplier: 1.0 })));
-    setRobots([
-      {
-        robotId: "Rover_1",
-        role: "LEAD_SCOUT",
-        position: pos.start,
-        heading: 90,
-        status: "IDLE",
-        activeRoute: "VIA_BRIDGE_ALPHA",
-        destination: scenario.hubGoalLabel,
-        updatedAt: Date.now(),
-      },
-      {
-        robotId: "Rover_2",
-        role: "DELIVERY_UNIT",
-        position: { x: pos.start.x, y: pos.start.y - 4.0, z: pos.start.z },
-        heading: 90,
-        status: "IDLE",
-        activeRoute: "VIA_BRIDGE_ALPHA",
-        destination: scenario.hubGoalLabel,
-        updatedAt: Date.now(),
-      },
-    ]);
-    setDelayAvoided(0);
-  };
-
-  const executeStep = (currentStep: number) => {
-    switch (currentStep) {
-      case 0:
-        setRobots(prev => [
-          { ...prev[0], position: pos.start, status: "EN_ROUTE" },
-          { ...prev[1], position: pos.start, status: "EN_ROUTE" },
-        ]);
-        break;
-
-      case 1:
-        setRobots(prev => [
-          { ...prev[0], position: pos.fork, status: "EN_ROUTE" },
-          { ...prev[1], position: { x: pos.start.x, y: (pos.start.y + pos.fork.y) / 2, z: 0.0 }, status: "EN_ROUTE" },
-        ]);
-        break;
-
-      case 2:
-        setBridges(prev => prev.map(b => b.bridgeId === "Bridge_Alpha" ? {
-          ...b,
-          isBlocked: true,
-          costMultiplier: 999.0,
-          updatedAt: Date.now(),
-        } : b));
-
-        setRobots(prev => [
-          { ...prev[0], position: pos.primaryEntry, status: "TRAPPED", activeRoute: "VIA_BRIDGE_ALPHA" },
-          { ...prev[1], position: pos.fork, status: "REROUTING", activeRoute: "VIA_BRIDGE_BETA" },
-        ]);
-        setDelayAvoided(scenario.delaySeconds);
-        break;
-
-      case 3:
-        setRobots(prev => [
-          prev[0],
-          { ...prev[1], position: pos.detourApproach, status: "EN_ROUTE", activeRoute: "VIA_BRIDGE_BETA" },
-        ]);
-        break;
-
-      case 4:
-        setRobots(prev => [
-          prev[0],
-          { ...prev[1], position: pos.detourEntry, status: "EN_ROUTE" },
-        ]);
-        break;
-
-      case 5:
-        setRobots(prev => [
-          prev[0],
-          { ...prev[1], position: pos.detourExit, status: "EN_ROUTE" },
-        ]);
-        break;
-
-      case 6:
-        setRobots(prev => [
-          prev[0],
-          { ...prev[1], position: pos.goal, status: "ARRIVED" },
-        ]);
-        setIsRunning(false);
-        break;
-
-      default:
-        setIsRunning(false);
-        break;
-    }
-  };
-
-  const handleTogglePlay = () => {
-    setIsRunning(!isRunning);
-  };
-
-  useEffect(() => {
-    if (isRunning) {
-      autoRunTimerRef.current = setInterval(() => {
-        setSimStep(prev => {
-          if (prev >= 6) {
-            setIsRunning(false);
-            return prev;
-          }
-          const next = prev + 1;
-          executeStep(next);
-          return next;
-        });
-      }, 1400);
-    } else {
-      if (autoRunTimerRef.current) clearInterval(autoRunTimerRef.current);
-    }
-    return () => {
-      if (autoRunTimerRef.current) clearInterval(autoRunTimerRef.current);
-    };
-  }, [isRunning, currentScenarioId]);
 
   return (
-    <div className="min-h-screen bg-[#050811] text-slate-100 flex flex-col selection:bg-cyan-500/30">
-      {/* Clean Minimalist Header */}
+    <div className="min-h-screen bg-[#050811] text-slate-100 flex flex-col selection:bg-cyan-500/30 font-['Outfit',sans-serif]">
+      {/* Top Header */}
       <header className="px-6 py-3.5 border-b border-slate-800/80 bg-[#070b14]/90 backdrop-blur-md flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-600 p-0.5 flex items-center justify-center">
@@ -350,14 +129,14 @@ export function App() {
           <div>
             <h1 className="text-sm font-bold tracking-tight text-white flex items-center gap-2">
               THE LIVING MAP
-              <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+              <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 font-mono">
                 World Labs 3D × Convex
               </span>
             </h1>
           </div>
         </div>
 
-        {/* Minimal Scenario Switcher Pills */}
+        {/* Minimal Scenario Switcher */}
         <div className="flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-xl border border-slate-800">
           {Object.values(SCENARIOS).map((sc) => (
             <button
@@ -388,16 +167,11 @@ export function App() {
       </header>
 
       {/* Main Full-Bleed 3D Stage */}
-      <main className="flex-1 p-4 flex flex-col max-w-[1550px] w-full mx-auto justify-center">
+      <main className="flex-1 p-4 flex flex-col max-w-[1580px] w-full mx-auto justify-center">
         <CinematicViewport3D
-          robots={robots}
-          bridges={bridges}
           scenario={scenario}
           onToggleBridge={handleToggleBridge}
-          isRunning={isRunning}
-          onTogglePlay={handleTogglePlay}
-          onReset={handleReset}
-          delayAvoided={delayAvoided}
+          isBridgeBlocked={isBridgeBlocked}
         />
       </main>
     </div>

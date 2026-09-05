@@ -1,0 +1,38 @@
+[
+  {
+    "scenario": {
+      "name": "NYC_Soho_Urban_Alley",
+      "prompt": "New York City cobblestone street in Soho with cast-iron buildings, narrow alleyway between brick facades, asphalt intersection, daylight, photorealistic urban geometry.",
+      "out_dir": "assets/scenarios/nyc_soho"
+    },
+    "response": {
+      "operation_id": "aa3b7c89-c303-41ea-9920-ad1c8b416c0c",
+      "created_at": "2026-09-05T18:24:54Z",
+      "updated_at": "2026-09-05T18:24:54Z",
+      "expires_at": "2026-09-05T19:24:54Z",
+      "done": false,
+      "error": null,
+      "metadata": null,
+      "response": null,
+      "cost": null
+    }
+  },
+  {
+    "scenario": {
+      "name": "Port_Container_Logistics_Bay",
+      "prompt": "Industrial shipping container port terminal with stacked intermodal freight containers, asphalt transport lanes, gantry crane corridor, daylight, realistic logistics depot.",
+      "out_dir": "assets/scenarios/port_logistics"
+    },
+    "response": {
+      "operation_id": "26ce87ee-1617-4d81-8f54-6ffd1bc358f1",
+      "created_at": "2026-09-05T18:25:03Z",
+      "updated_at": "2026-09-05T18:25:03Z",
+      "expires_at": "2026-09-05T19:25:03Z",
+      "done": false,
+      "error": null,
+      "metadata": null,
+      "response": null,
+      "cost": null
+    }
+  }
+]

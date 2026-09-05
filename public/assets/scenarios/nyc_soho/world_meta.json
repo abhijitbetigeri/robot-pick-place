@@ -1,0 +1,43 @@
+{
+  "world_id": "7e7a2603-0c27-4939-9c9b-2be271fa85f2",
+  "display_name": "NYC_Soho_Urban_Alley",
+  "tags": null,
+  "assets": {
+    "mesh": {
+      "collider_mesh_url": "https://cdn.marble.worldlabs.ai/7e7a2603-0c27-4939-9c9b-2be271fa85f2/d3086a5e.glb",
+      "hq_mesh_url": null,
+      "full_res_mesh_url": null
+    },
+    "imagery": {
+      "pano_url": "https://cdn.marble.worldlabs.ai/7e7a2603-0c27-4939-9c9b-2be271fa85f2/00a26439-941b-4b05-8d50-4ed7f046d07a_panos/rgb_0.png"
+    },
+    "splats": {
+      "spz_urls": {
+        "500k": "https://cdn.marble.worldlabs.ai/7e7a2603-0c27-4939-9c9b-2be271fa85f2/9f632aff-aea9-4925-b194-12b8a4507ec6_ceramic_500k.spz",
+        "100k": "https://cdn.marble.worldlabs.ai/7e7a2603-0c27-4939-9c9b-2be271fa85f2/769c9aea-464b-4118-9658-5968a4449dab_dust_100k.spz",
+        "150k": "https://cdn.marble.worldlabs.ai/7e7a2603-0c27-4939-9c9b-2be271fa85f2/76a00148-6c95-4ea4-baf7-89a24195e44d_ceramic_150k.spz",
+        "full_res": "https://cdn.marble.worldlabs.ai/7e7a2603-0c27-4939-9c9b-2be271fa85f2/9475b855-aca5-4443-94d3-8ad526d11b13_ceramic.spz"
+      },
+      "semantics_metadata": {
+        "metric_scale_factor": 2.315708637237549,
+        "ground_plane_offset": 1.3830740451812744
+      }
+    },
+    "thumbnail_url": "https://cdn.marble.worldlabs.ai/7e7a2603-0c27-4939-9c9b-2be271fa85f2/83b68527-30cd-412f-a772-6058e79752b5_sand_mpi/thumbnail.webp",
+    "caption": "The scene is a photorealistic depiction of a New York City street in Soho, characterized by its distinctive urban geometry and architectural elements under daylight. The overall tone is vibrant and bustling, capturing the essence of a historic yet dynamic city environment. The street is paved with cobblestones, meticulously arranged, leading towards an asphalt intersection that marks a clear transition in the road surface. Dominating the streetscape are several cast-iron buildings, their intricate facades showcasing classic architectural details and large windows. Adjacent to these, a narrow alleyway cuts between brick facades, revealing a glimpse into the dense urban fabric. The brick buildings exhibit varying shades of red and brown, with visible mortar lines and occasional fire escapes clinging to their sides. Streetlights with ornate designs are strategically placed along the sidewalks, providing illumination. Various commercial signs, some vintage, adorn the storefronts of the buildings, adding to the authentic Soho atmosphere. The cast-iron buildings stand prominently along the main thoroughfare, their ground floors housing retail establishments. The narrow alleyway is situated between two brick buildings, creating a deep, shadowed passage. The asphalt intersection lies ahead, where the cobblestone street meets a wider crossroad. The streetlights are positioned at regular intervals along the sidewalks, flanking the buildings. "
+  },
+  "created_at": "2026-09-05T18:24:57Z",
+  "updated_at": "2026-09-05T18:30:00Z",
+  "permission": {
+    "public": false,
+    "allowed_readers": [],
+    "allowed_writers": [],
+    "allow_id_access": false
+  },
+  "world_prompt": {
+    "text_prompt": "The scene is a photorealistic depiction of a New York City street in Soho, characterized by its distinctive urban geometry and architectural elements under daylight. The overall tone is vibrant and bustling, capturing the essence of a historic yet dynamic city environment. The street is paved with cobblestones, meticulously arranged, leading towards an asphalt intersection that marks a clear transition in the road surface. Dominating the streetscape are several cast-iron buildings, their intricate facades showcasing classic architectural details and large windows. Adjacent to these, a narrow alleyway cuts between brick facades, revealing a glimpse into the dense urban fabric. The brick buildings exhibit varying shades of red and brown, with visible mortar lines and occasional fire escapes clinging to their sides. Streetlights with ornate designs are strategically placed along the sidewalks, providing illumination. Various commercial signs, some vintage, adorn the storefronts of the buildings, adding to the authentic Soho atmosphere. The cast-iron buildings stand prominently along the main thoroughfare, their ground floors housing retail establishments. The narrow alleyway is situated between two brick buildings, creating a deep, shadowed passage. The asphalt intersection lies ahead, where the cobblestone street meets a wider crossroad. The streetlights are positioned at regular intervals along the sidewalks, flanking the buildings. The 360 scene is faultless.",
+    "type": "text"
+  },
+  "world_marble_url": "https://marble.worldlabs.ai/world/7e7a2603-0c27-4939-9c9b-2be271fa85f2",
+  "model": "marble-1.1"
+}
