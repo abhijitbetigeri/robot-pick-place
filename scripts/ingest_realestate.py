@@ -3,10 +3,12 @@
 =============================================================================
 REAL ESTATE LISTING INGESTION PIPELINE (Redfin & Zillow -> MuJoCo/Isaac Sim)
 Extracts MLS data, photos, and calls World Labs Marble API for 3D foundation worlds.
+Supports both direct image-seeded and multi-modal text/spatial conditioning.
 =============================================================================
 """
 
 import argparse
+import base64
 import json
 import os
 import sys
@@ -14,7 +16,16 @@ import time
 import urllib.parse
 import requests
 
-API_KEY = os.getenv("WORLD_LABS_API_KEY")
+def get_api_key():
+    key = os.getenv("WORLD_LABS_API_KEY")
+    if not key and os.path.exists(".env"):
+        with open(".env") as f:
+            for line in f:
+                if line.startswith("WORLD_LABS_API_KEY="):
+                    key = line.strip().split("=", 1)[1]
+    return key
+
+API_KEY = get_api_key()
 MARBLE_BASE_URL = "https://api.worldlabs.ai"
 
 HEADERS = {
@@ -105,22 +116,58 @@ def ingest_property_url(url: str):
     print(f"✅ Extracted Property: {property_data['title']} ({property_data['sqft']} sqft)")
     return property_data
 
-def generate_3d_world(property_data: dict):
+def generate_3d_world(property_data: dict, seed_mode: str = "image"):
+    """
+    Synthesize 3D foundation world in World Labs Marble.
+    seed_mode: 'image' (seed using listing RGB photo) or 'text'
+    """
     if not API_KEY:
         print("⚠️ WORLD_LABS_API_KEY not set. Skipping generative 3D cloud synthesis.")
         return property_data
 
-    print(f"\n🚀 Synthesizing 3D Foundation World via World Labs Marble API for '{property_data['title']}'...")
-    prompt = f"Interior living room and open floorplan layout of {property_data['title']}, high ceilings, hardwood flooring, modern architectural lighting, photorealistic."
-    
-    payload = {
-        "display_name": property_data["title"][:40],
-        "model": "marble-1.1",
-        "world_prompt": {
-            "type": "text",
-            "text_prompt": prompt,
+    photos = property_data.get("photos", [])
+    primary_photo = photos[0] if photos else None
+
+    # Construct prompt payload based on mode
+    if seed_mode == "image" and primary_photo:
+        print(f"\n📸 Image-Seeded 3D Synthesis via World Labs Marble API for '{property_data['title']}'...")
+        print(f"   Using seed photo: {primary_photo}")
+        
+        # Check if photo is local file or remote URL
+        if os.path.exists(primary_photo):
+            with open(primary_photo, "rb") as img_f:
+                b64_data = base64.b64encode(img_f.read()).decode("utf-8")
+            image_prompt_obj = {
+                "source": "data_base64",
+                "data_base64": b64_data
+            }
+        else:
+            image_prompt_obj = {
+                "source": "uri",
+                "uri": primary_photo
+            }
+
+        payload = {
+            "display_name": property_data["title"][:40],
+            "model": "marble-1.1",
+            "world_prompt": {
+                "type": "image",
+                "image_prompt": image_prompt_obj,
+                "text_prompt": f"Photorealistic 3D interior spatial room corresponding to {property_data['title']}, high ceilings, clean architecture"
+            }
         }
-    }
+    else:
+        print(f"\n🚀 Text-Conditioned 3D Synthesis via World Labs Marble API for '{property_data['title']}'...")
+        prompt = f"Interior living room and open floorplan layout of {property_data['title']}, high ceilings, hardwood flooring, modern architectural lighting, photorealistic."
+        payload = {
+            "display_name": property_data["title"][:40],
+            "model": "marble-1.1",
+            "world_prompt": {
+                "type": "text",
+                "text_prompt": prompt,
+            }
+        }
+
     try:
         res = requests.post(f"{MARBLE_BASE_URL}/marble/v1/worlds:generate", headers=HEADERS, json=payload, timeout=30)
         if res.status_code in (200, 201, 202):
@@ -141,6 +188,7 @@ def main():
     parser.add_argument("--sample", type=str, default="sf_loft", choices=["sf_loft", "seattle_modern"])
     parser.add_argument("--output", type=str, default="realestate_listing.json")
     parser.add_argument("--generate-3d", action="store_true", help="Synthesize 3D world via World Labs Marble")
+    parser.add_argument("--seed-mode", type=str, default="image", choices=["image", "text"], help="Prompt mode for World Labs (image or text)")
     args = parser.parse_args()
 
     if args.url:
@@ -149,7 +197,7 @@ def main():
         data = SAMPLE_PROPERTIES.get(args.sample, SAMPLE_PROPERTIES["sf_loft"])
 
     if args.generate_3d:
-        data = generate_3d_world(data)
+        data = generate_3d_world(data, seed_mode=args.seed_mode)
 
     with open(args.output, "w") as f:
         json.dump(data, f, indent=2)
