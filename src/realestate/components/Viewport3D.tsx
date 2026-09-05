@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { RealEstateListing, PlacedObject } from '../types';
 import { MeshFactory } from './MeshFactory';
 import {
@@ -20,6 +21,7 @@ import {
   Moon,
   Footprints,
   ArrowDownToLine,
+  ExternalLink,
 } from 'lucide-react';
 
 interface Viewport3DProps {
@@ -55,11 +57,14 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const orbitControlsRef = useRef<OrbitControls | null>(null);
   const transformControlsRef = useRef<TransformControls | null>(null);
+  const roomGroupRef = useRef<THREE.Group | null>(null);
+  const marble3dGroupRef = useRef<THREE.Group | null>(null);
   const objectsGroupRef = useRef<THREE.Group | null>(null);
   const selectionBoxHelperRef = useRef<THREE.BoxHelper | null>(null);
   const physicsWireframeGroupRef = useRef<THREE.Group | null>(null);
 
   const [lightingPreset, setLightingPreset] = useState<'day' | 'golden_hour' | 'night'>('day');
+  const [showWorldLabs3D, setShowWorldLabs3D] = useState<boolean>(true);
 
   const sunLightRef = useRef<THREE.DirectionalLight | null>(null);
   const ambientLightRef = useRef<THREE.AmbientLight | null>(null);
@@ -170,8 +175,17 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     scene.add(warmCeilingSpot);
     scene.add(warmCeilingSpot.target);
 
-    // Architectural Room Shell
-    buildPhotorealisticRoom(scene, listing);
+    // Architectural Room Shell Group
+    const roomGroup = new THREE.Group();
+    roomGroup.name = "Architectural_Shell";
+    scene.add(roomGroup);
+    roomGroupRef.current = roomGroup;
+
+    // World Labs 3D Generative Mesh Group
+    const marbleGroup = new THREE.Group();
+    marbleGroup.name = "World_Labs_3D_Mesh";
+    scene.add(marbleGroup);
+    marble3dGroupRef.current = marbleGroup;
 
     // Objects Group
     const objectsGroup = new THREE.Group();
@@ -277,16 +291,76 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
       cancelAnimationFrame(animationFrameId);
       renderer.dispose();
     };
-  }, [listing.id]);
+  }, []);
+
+  // --- REBUILD ROOM & WORLD LABS 3D MESH REACTIVELY ON LISTING CHANGE ---
+  useEffect(() => {
+    if (!sceneRef.current || !roomGroupRef.current || !marble3dGroupRef.current) return;
+
+    // 1. Rebuild architectural room geometry
+    buildPhotorealisticRoom(sceneRef.current, listing);
+
+    // 2. Load World Labs 3D GLTF Collider Mesh if available
+    const marbleGroup = marble3dGroupRef.current;
+    marbleGroup.clear();
+
+    if (listing.glbUrl && showWorldLabs3D) {
+      const loader = new GLTFLoader();
+      loader.load(
+        listing.glbUrl,
+        (gltf) => {
+          const model = gltf.scene;
+          model.position.set(0, 0, 0);
+
+          // Compute bounding box to scale naturally into room
+          const box = new THREE.Box3().setFromObject(model);
+          const size = box.getSize(new THREE.Vector3());
+          const maxDim = Math.max(size.x, size.z);
+          const targetDim = Math.max(listing.metricBounds.widthMeters, listing.metricBounds.depthMeters) * 0.95;
+          const scale = maxDim > 0 ? targetDim / maxDim : 1;
+          model.scale.set(scale, scale, scale);
+
+          model.traverse((child) => {
+            if ((child as THREE.Mesh).isMesh) {
+              const mesh = child as THREE.Mesh;
+              mesh.castShadow = true;
+              mesh.receiveShadow = true;
+              if (mesh.material) {
+                (mesh.material as THREE.Material).transparent = true;
+                (mesh.material as THREE.Material).opacity = 0.85;
+              }
+            }
+          });
+
+          marbleGroup.add(model);
+        },
+        undefined,
+        (err) => console.log("Notice: No custom GLB found for listing, using PBR spatial room", err)
+      );
+    }
+
+    // 3. Re-frame camera and orbit controls to fit new room bounds
+    if (cameraRef.current && orbitControlsRef.current) {
+      const w = listing.metricBounds.widthMeters;
+      const d = listing.metricBounds.depthMeters;
+      const h = listing.metricBounds.ceilingHeightMeters;
+
+      orbitControlsRef.current.target.set(0, h * 0.35, 0);
+      cameraRef.current.position.set(w * 0.65, h * 1.8, d * 0.85);
+      cameraRef.current.lookAt(0, h * 0.35, 0);
+      orbitControlsRef.current.update();
+    }
+  }, [listing, showWorldLabs3D]);
 
   // --- PHOTOREALISTIC ARCHITECTURAL ROOM ---
   const buildPhotorealisticRoom = (scene: THREE.Scene, list: RealEstateListing) => {
+    if (!roomGroupRef.current) return;
+    const roomGroup = roomGroupRef.current;
+    roomGroup.clear();
+
     const w = list.metricBounds.widthMeters;
     const d = list.metricBounds.depthMeters;
     const h = list.metricBounds.ceilingHeightMeters;
-
-    const roomGroup = new THREE.Group();
-    roomGroup.name = "Architectural_Shell";
 
     // 1. European Parquet Hardwood Floor with High-End PBR Gloss
     const floorCanvas = document.createElement('canvas');
@@ -354,7 +428,7 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     rug.receiveShadow = true;
     roomGroup.add(rug);
 
-    // 3. Subtle Grid overlay
+    // 3. Metric Grid overlay
     const grid = new THREE.GridHelper(Math.max(w, d), Math.round(Math.max(w, d)), 0x38bdf8, 0x1e293b);
     grid.position.y = 0.003;
     roomGroup.add(grid);
@@ -381,40 +455,32 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
       roomGroup.add(slat);
     }
 
-    // East Wall with Contemporary Framed Gallery Art
+    // East Wall with Authentic Property Photo Gallery Display
     const eastWall = new THREE.Mesh(new THREE.BoxGeometry(0.12, h, d), wallMat);
     eastWall.position.set(w / 2, h / 2, 0);
     eastWall.receiveShadow = true;
     roomGroup.add(eastWall);
 
-    // Gallery Art Canvas
-    const artCanvas = document.createElement('canvas');
-    artCanvas.width = 512;
-    artCanvas.height = 512;
-    const aCtx = artCanvas.getContext('2d')!;
-    const grad = aCtx.createLinearGradient(0, 0, 512, 512);
-    grad.addColorStop(0, '#0f172a');
-    grad.addColorStop(0.5, '#0369a1');
-    grad.addColorStop(1, '#f59e0b');
-    aCtx.fillStyle = grad;
-    aCtx.fillRect(0, 0, 512, 512);
-    aCtx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-    aCtx.beginPath();
-    aCtx.arc(256, 256, 120, 0, Math.PI * 2);
-    aCtx.fill();
+    // Load authentic property photo onto the gallery art frame
+    const textureLoader = new THREE.TextureLoader();
+    const photoUrl = list.photos && list.photos.length > 1 ? list.photos[1] : (list.photos[0] || '');
 
-    const artTex = new THREE.CanvasTexture(artCanvas);
-    const artMat = new THREE.MeshStandardMaterial({ map: artTex, roughness: 0.2 });
-    const artFrameMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3, metalness: 0.8 });
+    if (photoUrl) {
+      textureLoader.load(photoUrl, (photoTex) => {
+        photoTex.colorSpace = THREE.SRGBColorSpace;
+        const photoArtMat = new THREE.MeshStandardMaterial({ map: photoTex, roughness: 0.2 });
+        const artFrameMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3, metalness: 0.8 });
 
-    const artFrame = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1.4, 2.2), artFrameMat);
-    artFrame.position.set(w / 2 - 0.04, h * 0.58, 0);
-    roomGroup.add(artFrame);
+        const artFrame = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1.8, 2.6), artFrameMat);
+        artFrame.position.set(w / 2 - 0.04, h * 0.58, 0);
+        roomGroup.add(artFrame);
 
-    const artPicture = new THREE.Mesh(new THREE.PlaneGeometry(2.1, 1.3), artMat);
-    artPicture.rotation.y = -Math.PI / 2;
-    artPicture.position.set(w / 2 - 0.07, h * 0.58, 0);
-    roomGroup.add(artPicture);
+        const artPicture = new THREE.Mesh(new THREE.PlaneGeometry(2.5, 1.7), photoArtMat);
+        artPicture.rotation.y = -Math.PI / 2;
+        artPicture.position.set(w / 2 - 0.07, h * 0.58, 0);
+        roomGroup.add(artPicture);
+      });
+    }
 
     // South Wall (Low profile threshold)
     const southWall = new THREE.Mesh(new THREE.BoxGeometry(w, 0.35, 0.12), wallMat);
@@ -442,38 +508,18 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
       roomGroup.add(mul);
     }
 
-    // Outdoor City Skyline Panorama Backdrop outside West Window
-    const skyCanvas = document.createElement('canvas');
-    skyCanvas.width = 1024;
-    skyCanvas.height = 512;
-    const sCtx = skyCanvas.getContext('2d')!;
-    const skyGrad = sCtx.createLinearGradient(0, 0, 0, 512);
-    skyGrad.addColorStop(0, '#0c1222');
-    skyGrad.addColorStop(0.6, '#1e293b');
-    skyGrad.addColorStop(1, '#0f172a');
-    sCtx.fillStyle = skyGrad;
-    sCtx.fillRect(0, 0, 1024, 512);
-
-    // Silhouetted Skyscraper buildings
-    sCtx.fillStyle = '#020617';
-    for (let b = 0; b < 1024; b += 48) {
-      const bh = 150 + ((b * 37) % 200);
-      sCtx.fillRect(b, 512 - bh, 42, bh);
-      // Window light pinpoints
-      sCtx.fillStyle = 'rgba(253, 224, 71, 0.4)';
-      for (let wy = 512 - bh + 20; wy < 500; wy += 25) {
-        if ((b + wy) % 3 === 0) sCtx.fillRect(b + 8, wy, 6, 8);
-        if ((b + wy) % 5 === 0) sCtx.fillRect(b + 22, wy, 6, 8);
-      }
-      sCtx.fillStyle = '#020617';
+    // Outdoor Panoramic Backdrop (loads real exterior photo or skyline)
+    const frontalPhotoUrl = list.photos && list.photos.length > 0 ? list.photos[0] : '';
+    if (frontalPhotoUrl) {
+      textureLoader.load(frontalPhotoUrl, (extTex) => {
+        extTex.colorSpace = THREE.SRGBColorSpace;
+        const extMat = new THREE.MeshBasicMaterial({ map: extTex });
+        const extBackdrop = new THREE.Mesh(new THREE.PlaneGeometry(d * 2.5, h * 2.5), extMat);
+        extBackdrop.rotation.y = Math.PI / 2;
+        extBackdrop.position.set(-w / 2 - 6, h * 0.6, 0);
+        roomGroup.add(extBackdrop);
+      });
     }
-
-    const skyTex = new THREE.CanvasTexture(skyCanvas);
-    const skyMat = new THREE.MeshBasicMaterial({ map: skyTex });
-    const skyBackdrop = new THREE.Mesh(new THREE.PlaneGeometry(d * 2.5, h * 3), skyMat);
-    skyBackdrop.rotation.y = Math.PI / 2;
-    skyBackdrop.position.set(-w / 2 - 8, h * 0.6, 0);
-    roomGroup.add(skyBackdrop);
 
     // Baseboard Trims
     const baseboardMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.5 });
@@ -484,8 +530,6 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     const bbEast = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.14, d), baseboardMat);
     bbEast.position.set(w / 2 - 0.06, 0.07, 0);
     roomGroup.add(bbEast);
-
-    scene.add(roomGroup);
   };
 
   // --- SYNC PLACED OBJECTS IN 3D SCENE ---
@@ -834,6 +878,21 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
         >
           <Layers className="w-3.5 h-3.5" />
           <span>Physics Geoms</span>
+        </button>
+
+        <div className="h-4 w-px bg-slate-800 mx-1" />
+
+        <button
+          onClick={() => setShowWorldLabs3D(!showWorldLabs3D)}
+          className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5 ${
+            showWorldLabs3D
+              ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-md shadow-emerald-500/20"
+              : "text-slate-400 hover:text-white"
+          }`}
+          title="Toggle World Labs 3D Foundation Mesh"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+          <span>World Labs 3D</span>
         </button>
       </div>
 
