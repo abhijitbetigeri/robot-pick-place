@@ -19,8 +19,14 @@ venv/
 *.usda
 *.usdc
 *.spz
-data/
+/data/
 assets/downloads/
+
+# ...but DO ship the generated assets the deployed demo loads at runtime.
+# Without these exceptions the app builds locally and 404s in production.
+!public/assets/**/*.glb
+!public/assets/**/*.gltf
+!public/assets/**/*.spz
 
 # Node / Web UI
 node_modules/
