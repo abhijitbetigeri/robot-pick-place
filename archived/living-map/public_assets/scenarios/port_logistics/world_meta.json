@@ -1,0 +1,43 @@
+{
+  "world_id": "c6359220-4637-4a19-841e-d55cea097dd6",
+  "display_name": "Port_Container_Logistics_Bay",
+  "tags": null,
+  "assets": {
+    "mesh": {
+      "collider_mesh_url": "https://cdn.marble.worldlabs.ai/c6359220-4637-4a19-841e-d55cea097dd6/de141b2a.glb",
+      "hq_mesh_url": null,
+      "full_res_mesh_url": null
+    },
+    "imagery": {
+      "pano_url": "https://cdn.marble.worldlabs.ai/c6359220-4637-4a19-841e-d55cea097dd6/3e926c5a-2a9d-4282-bc12-dfc77827c92f_panos/rgb_0.png"
+    },
+    "splats": {
+      "spz_urls": {
+        "500k": "https://cdn.marble.worldlabs.ai/c6359220-4637-4a19-841e-d55cea097dd6/a3e452b0-4d68-4e8c-9083-fb7fb0195e64_ceramic_500k.spz",
+        "100k": "https://cdn.marble.worldlabs.ai/c6359220-4637-4a19-841e-d55cea097dd6/f6da3337-e6cb-449b-885c-7114d3562e41_dust_100k.spz",
+        "150k": "https://cdn.marble.worldlabs.ai/c6359220-4637-4a19-841e-d55cea097dd6/78043cac-e2f6-49e8-8164-7e05c3a20b68_ceramic_150k.spz",
+        "full_res": "https://cdn.marble.worldlabs.ai/c6359220-4637-4a19-841e-d55cea097dd6/8cf33169-21d5-4a79-a0b2-b59608067cc5_ceramic.spz"
+      },
+      "semantics_metadata": {
+        "metric_scale_factor": 1.526161551475525,
+        "ground_plane_offset": 0.919264554977417
+      }
+    },
+    "thumbnail_url": "https://cdn.marble.worldlabs.ai/c6359220-4637-4a19-841e-d55cea097dd6/a63c6154-3666-43d5-b5e8-3de3d6745e77_sand_mpi/thumbnail.webp",
+    "caption": "The scene is an industrial shipping container port terminal, rendered in a realistic style, capturing the immense scale and intricate operations of a global logistics hub. The overall tone is one of organized chaos and relentless activity, characteristic of a bustling freight depot under daylight. The terminal is dominated by towering stacks of intermodal freight containers, painted in a myriad of vibrant colors such as red, blue, green, and yellow, creating a striking visual mosaic against the sky. These containers are meticulously arranged in long, parallel rows, forming canyons of steel that stretch into the distance. Wide asphalt transport lanes, clearly marked with white lines, crisscross the terminal, providing pathways for heavy machinery and trucks. A prominent gantry crane corridor runs above these lanes, featuring massive, yellow gantry cranes with their intricate steel structures and suspended spreader mechanisms, poised to lift and move containers. The ground is a vast expanse of dark asphalt, showing signs of heavy use and tire marks from constant vehicle movement. In the distance, other industrial structures and possibly the masts of ships are faintly visible, hinting at the port's connection to maritime trade. The stacked containers rise several stories high, forming geometric patterns that define the landscape. The asphalt lanes are wide enough to accommodate multiple large vehicles simultaneously. The gantry cranes are positioned directly above the container stacks and transport lanes, facilitating efficient loading and unloading operations. "
+  },
+  "created_at": "2026-09-05T18:25:05Z",
+  "updated_at": "2026-09-05T18:30:42Z",
+  "permission": {
+    "public": false,
+    "allowed_readers": [],
+    "allowed_writers": [],
+    "allow_id_access": false
+  },
+  "world_prompt": {
+    "text_prompt": "The scene is an industrial shipping container port terminal, rendered in a realistic style, capturing the immense scale and intricate operations of a global logistics hub. The overall tone is one of organized chaos and relentless activity, characteristic of a bustling freight depot under daylight. The terminal is dominated by towering stacks of intermodal freight containers, painted in a myriad of vibrant colors such as red, blue, green, and yellow, creating a striking visual mosaic against the sky. These containers are meticulously arranged in long, parallel rows, forming canyons of steel that stretch into the distance. Wide asphalt transport lanes, clearly marked with white lines, crisscross the terminal, providing pathways for heavy machinery and trucks. A prominent gantry crane corridor runs above these lanes, featuring massive, yellow gantry cranes with their intricate steel structures and suspended spreader mechanisms, poised to lift and move containers. The ground is a vast expanse of dark asphalt, showing signs of heavy use and tire marks from constant vehicle movement. In the distance, other industrial structures and possibly the masts of ships are faintly visible, hinting at the port's connection to maritime trade. The stacked containers rise several stories high, forming geometric patterns that define the landscape. The asphalt lanes are wide enough to accommodate multiple large vehicles simultaneously. The gantry cranes are positioned directly above the container stacks and transport lanes, facilitating efficient loading and unloading operations. The 360 scene is faultless.",
+    "type": "text"
+  },
+  "world_marble_url": "https://marble.worldlabs.ai/world/c6359220-4637-4a19-841e-d55cea097dd6",
+  "model": "marble-1.1"
+}
