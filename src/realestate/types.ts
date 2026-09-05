@@ -75,6 +75,8 @@ export interface RealEstateListing {
   panoUrl?: string;
   glbUrl?: string;
   marbleWorldUrl?: string;
+  mintChatUrl?: string;
+  mintAssetId?: string;
   metricBounds: {
     widthMeters: number;
     depthMeters: number;

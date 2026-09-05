@@ -1,0 +1,37 @@
+[
+  {
+    "id": "house_1",
+    "title": "4BD / 4BA California Luxury Residence (House #1)",
+    "chatUrl": "https://mint.gg/chat/ph74rgzgyzw11br3wrytmtmjzn8dt98m",
+    "assetId": "j97ag4gqp2rba9e8qj4spjepe98dtmcc",
+    "status": "queued"
+  },
+  {
+    "id": "house_2",
+    "title": "4BD / 3BA Modern Residence (House #2)",
+    "chatUrl": "https://mint.gg/chat/ph78d53gj7azf9chwtkm4746gh8dtgbx",
+    "assetId": "j97531xp01xd7xxvg2eya2fwxs8dv3ve",
+    "status": "queued"
+  },
+  {
+    "id": "house_3",
+    "title": "3BD / 2BA Coastal Craftsman (House #3)",
+    "chatUrl": "https://mint.gg/chat/ph735d6rn244ez3tj8mq57nkk18dtw7b",
+    "assetId": "j97ezjare8b8qfpswxap7krmvh8dt98t",
+    "status": "queued"
+  },
+  {
+    "id": "house_4",
+    "title": "5BD / 4BA Architectural Estate (House #4)",
+    "chatUrl": "https://mint.gg/chat/ph7d5zpjb5cd371n3dm3t6svtn8dt3vp",
+    "assetId": "j97fwme6yecy7ht0x2cgkfd4kx8dt8kf",
+    "status": "queued"
+  },
+  {
+    "id": "sf_loft",
+    "title": "Jackson Square Architectural Penthouse Loft",
+    "chatUrl": "https://mint.gg/chat/ph73b3c43e05cav8rbmtd9mgen8dvxdn",
+    "assetId": "j97c1znt7e9e4zdpmprcps58rn8dtp3f",
+    "status": "queued"
+  }
+]

@@ -156,6 +156,20 @@ export const RealEstateApp: React.FC = () => {
               <ExternalLink className="w-3 h-3 text-emerald-400" />
             </a>
           )}
+
+          {currentListing.mintChatUrl && (
+            <a
+              href={currentListing.mintChatUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-lime-500/20 to-emerald-500/20 hover:from-lime-500/30 hover:to-emerald-500/30 text-lime-300 border border-lime-500/40 text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-md"
+              title="Open Generated 3D World on Mint.gg"
+            >
+              <Layers className="w-3.5 h-3.5 text-lime-400" />
+              <span className="hidden md:inline">Mint.gg 3D</span>
+              <ExternalLink className="w-3 h-3 text-lime-400" />
+            </a>
+          )}
         </div>
 
         {/* Right Action Tools */}

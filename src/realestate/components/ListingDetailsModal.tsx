@@ -231,7 +231,18 @@ export const ListingDetailsModal: React.FC<ListingDetailsModalProps> = ({
                     rel="noopener noreferrer"
                     className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold flex items-center gap-1.5 shadow-sm"
                   >
-                    <span>World Labs 3D World</span>
+                    <span>World Labs 3D</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+                {currentListing.mintChatUrl && (
+                  <a
+                    href={currentListing.mintChatUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-2.5 py-1 rounded-lg bg-lime-500/20 hover:bg-lime-500/30 text-lime-300 border border-lime-500/40 text-[10px] font-bold flex items-center gap-1.5 shadow-sm"
+                  >
+                    <span>Mint.gg 3D</span>
                     <ExternalLink className="w-3 h-3" />
                   </a>
                 )}
