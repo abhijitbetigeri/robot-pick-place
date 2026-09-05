@@ -1,0 +1,21 @@
+{
+  "bookshelf": {
+    "assetId": "bookshelf",
+    "source_glb": "public/assets/furniture/bookshelf.glb",
+    "obj": "public/assets/sim/assets/bookshelf.obj",
+    "web_glb": "/assets/furniture/bookshelf.glb",
+    "faces": [
+      5098,
+      5098
+    ],
+    "dimensions": {
+      "width_m": 0.724,
+      "depth_m": 0.281,
+      "height_m": 0.85
+    },
+    "collision": {
+      "mode": "shelf",
+      "surface_z": 0.82
+    }
+  }
+}

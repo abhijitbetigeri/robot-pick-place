@@ -1,0 +1,209 @@
+{
+  "source": "staged scene (Convex) -> MuJoCo",
+  "shareId": "bedroom",
+  "listing": "Cozy Sunlit Study Bedroom",
+  "marble_world": "new_world",
+  "from": {
+    "object": "Reading Shelf",
+    "assetId": "bookshelf"
+  },
+  "to": {
+    "object": "Study Shelf",
+    "assetId": "bookshelf"
+  },
+  "start": [
+    -1.4,
+    1.9,
+    0.902
+  ],
+  "end": [
+    1.395,
+    -0.59,
+    0.882
+  ],
+  "distance_m": 3.74,
+  "success": true,
+  "phases": [
+    {
+      "phase": "Navigate to source 1",
+      "t": 0.4,
+      "object": {
+        "x": -1.4,
+        "y": 1.9,
+        "z": 0.882
+      },
+      "held": false
+    },
+    {
+      "phase": "Navigate to source 2",
+      "t": 1.1,
+      "object": {
+        "x": -1.4,
+        "y": 1.9,
+        "z": 0.882
+      },
+      "held": false
+    },
+    {
+      "phase": "Navigate to source 3",
+      "t": 3.14,
+      "object": {
+        "x": -1.4,
+        "y": 1.9,
+        "z": 0.882
+      },
+      "held": false
+    },
+    {
+      "phase": "Extend to book",
+      "t": 3.5,
+      "object": {
+        "x": -1.4,
+        "y": 1.9,
+        "z": 0.882
+      },
+      "held": false
+    },
+    {
+      "phase": "GRASP book",
+      "t": 3.75,
+      "object": {
+        "x": -1.402,
+        "y": 1.901,
+        "z": 0.882
+      },
+      "held": true,
+      "grasp_gap_m": 0.152
+    },
+    {
+      "phase": "Lift off surface",
+      "t": 4.12,
+      "object": {
+        "x": -1.406,
+        "y": 1.902,
+        "z": 1.101
+      },
+      "held": true
+    },
+    {
+      "phase": "Retract arm",
+      "t": 4.52,
+      "object": {
+        "x": -1.407,
+        "y": 1.466,
+        "z": 1.1
+      },
+      "held": true
+    },
+    {
+      "phase": "Navigate to target 1",
+      "t": 5.15,
+      "object": {
+        "x": -1.414,
+        "y": 1.514,
+        "z": 1.1
+      },
+      "held": true
+    },
+    {
+      "phase": "Navigate to target 2",
+      "t": 6.45,
+      "object": {
+        "x": -0.844,
+        "y": 1.53,
+        "z": 1.1
+      },
+      "held": true
+    },
+    {
+      "phase": "Navigate to target 3",
+      "t": 8.49,
+      "object": {
+        "x": -0.816,
+        "y": 0.553,
+        "z": 1.1
+      },
+      "held": true
+    },
+    {
+      "phase": "Navigate to target 4",
+      "t": 17.5,
+      "object": {
+        "x": -0.387,
+        "y": 0.334,
+        "z": 1.1
+      },
+      "held": true
+    },
+    {
+      "phase": "Navigate to target 5",
+      "t": 19.53,
+      "object": {
+        "x": 0.582,
+        "y": -0.55,
+        "z": 1.1
+      },
+      "held": true
+    },
+    {
+      "phase": "Navigate to target 6",
+      "t": 21.5,
+      "object": {
+        "x": 1.374,
+        "y": -0.568,
+        "z": 1.1
+      },
+      "held": true
+    },
+    {
+      "phase": "Navigate to target 7",
+      "t": 23.19,
+      "object": {
+        "x": 1.384,
+        "y": -1.089,
+        "z": 1.1
+      },
+      "held": true
+    },
+    {
+      "phase": "Extend over shelf",
+      "t": 23.89,
+      "object": {
+        "x": 1.39,
+        "y": -0.628,
+        "z": 1.1
+      },
+      "held": true
+    },
+    {
+      "phase": "Lower to surface",
+      "t": 24.2,
+      "object": {
+        "x": 1.395,
+        "y": -0.591,
+        "z": 0.882
+      },
+      "held": true
+    },
+    {
+      "phase": "RELEASE book",
+      "t": 24.45,
+      "object": {
+        "x": 1.395,
+        "y": -0.59,
+        "z": 0.882
+      },
+      "held": false
+    },
+    {
+      "phase": "Retract",
+      "t": 24.77,
+      "object": {
+        "x": 1.395,
+        "y": -0.59,
+        "z": 0.882
+      },
+      "held": false
+    }
+  ]
+}

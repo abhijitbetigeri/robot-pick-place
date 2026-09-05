@@ -1,0 +1,21 @@
+{
+  "source_glb": "public/assets/scenarios/new_world/scene_collider.glb",
+  "obj": "public/assets/sim/new_world.obj",
+  "faces_in": 167323,
+  "faces_out": 167323,
+  "bounds": {
+    "width_m": 4.494548097960546,
+    "depth_m": 5.664279741996623,
+    "height_m": 2.8570020637004063,
+    "min": [
+      -2.247274048980273,
+      -2.8321398709983114,
+      0.0
+    ],
+    "max": [
+      2.247274048980273,
+      2.8321398709983114,
+      2.8570020637004063
+    ]
+  }
+}
