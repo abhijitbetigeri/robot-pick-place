@@ -1,0 +1,21 @@
+{
+  "source_glb": "public/assets/scenarios/seattle_modern/scene_collider.glb",
+  "obj": "public/assets/sim/seattle_modern.obj",
+  "faces_in": 33034,
+  "faces_out": 33034,
+  "bounds": {
+    "width_m": 10.174097061157227,
+    "depth_m": 10.02109432220459,
+    "height_m": 1.442169547080994,
+    "min": [
+      -5.087048530578613,
+      -5.010547161102295,
+      0.0
+    ],
+    "max": [
+      5.087048530578613,
+      5.010547161102295,
+      1.442169547080994
+    ]
+  }
+}

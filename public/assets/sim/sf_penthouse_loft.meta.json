@@ -1,0 +1,21 @@
+{
+  "source_glb": "public/assets/scenarios/sf_penthouse_loft/scene_collider.glb",
+  "obj": "public/assets/sim/sf_penthouse_loft.obj",
+  "faces_in": 68363,
+  "faces_out": 68363,
+  "bounds": {
+    "width_m": 8.948437213897705,
+    "depth_m": 11.955809354782104,
+    "height_m": 2.217466354370117,
+    "min": [
+      -4.4742186069488525,
+      -5.977904677391052,
+      0.0
+    ],
+    "max": [
+      4.4742186069488525,
+      5.977904677391052,
+      2.217466354370117
+    ]
+  }
+}
