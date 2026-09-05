@@ -27,7 +27,7 @@ interface Frame {
 interface TrajDoc {
   fps: number;
   marble_world: string | null;
-  scene: { objects: Array<any> };
+  scene?: { objects: Array<any> };
   frames: Frame[];
 }
 
@@ -107,7 +107,9 @@ const parts = {
   object: part([box(0.14, 0.2, 0.032, BOOK)]),
 };
 
-function applyPose(g: THREE.Group, pose: Pose) {
+let g1Parts: (THREE.Mesh | null)[] = [];
+
+function applyPose(g: THREE.Object3D, pose: Pose) {
   g.position.set(pose.p[0], pose.p[1], pose.p[2]);
   // MuJoCo quaternions are [w, x, y, z]; three.js takes (x, y, z, w).
   g.quaternion.set(pose.q[1], pose.q[2], pose.q[3], pose.q[0]);
@@ -203,7 +205,7 @@ async function load() {
 
   // Generated furniture, at the poses staged in the studio.
   const loader = new GLTFLoader();
-  for (const o of traj.scene.objects) {
+  for (const o of (traj.scene?.objects ?? [])) {
     try {
       const gl = await loader.loadAsync(`/assets/furniture/${o.assetId}.glb`);
       const m = gl.scene;
@@ -217,6 +219,42 @@ async function load() {
     } catch {
       // No generated asset for this id yet - the room still reads fine without it.
     }
+  }
+
+  // The Unitree G1: MuJoCo exports one world pose per visual mesh geom, so the
+  // browser just places each STL. No kinematic chain to rebuild here - the
+  // poses already went through MuJoCo's forward kinematics.
+  if ((traj as any).g1_meshes) {
+    // Geometry comes from the COMPILED MuJoCo model, not the source STLs.
+    // MuJoCo re-centres mesh vertices when it compiles, and geom_xpos/geom_xmat
+    // are expressed against those vertices - loading the original STLs scatters
+    // the links. One .bin of float32 verts + uint32 indices, indexed by the
+    // manifest, keeps geometry and poses consistent by construction.
+    setStatus('loading G1 geometry…');
+    const [manifest, buf] = await Promise.all([
+      fetch('/assets/g1/g1_geom.json').then((r) => r.json()),
+      fetch('/assets/g1/g1_geom.bin').then((r) => r.arrayBuffer()),
+    ]);
+    const metal = new THREE.MeshStandardMaterial({
+      color: 0xe4e8ee, roughness: 0.4, metalness: 0.5,
+    });
+
+    g1Parts = manifest.map((m: any) => {
+      const verts = new Float32Array(buf, m.vertOffset, m.vertCount * 3);
+      const idx = new Uint32Array(buf, m.faceOffset, m.faceCount * 3);
+      const geom = new THREE.BufferGeometry();
+      geom.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+      geom.setIndex(new THREE.BufferAttribute(idx, 1));
+      geom.computeVertexNormals();
+      const mesh = new THREE.Mesh(geom, metal);
+      mesh.castShadow = true;
+      scene.add(mesh);
+      return mesh;
+    });
+
+    // The primitive stand-in robot is redundant once the real G1 is present.
+    Object.values(parts).forEach((p) => { if (p !== parts.object) p.visible = false; });
+    $('worldlabel').textContent += ' · Unitree G1';
   }
 
   return traj;
@@ -248,13 +286,48 @@ load().then((traj) => {
       scrub.value = String(i);
     } else { acc = 0; }
 
-    const f = frames[i];
+    const f = frames[i] as any;
+    if (Array.isArray(f.book)) {
+      const b = f.book;
+      parts.object.position.set(b[0], b[1], b[2]);
+      parts.object.quaternion.set(b[4], b[5], b[6], b[3]);
+    }
+    if (!f.base) {
+      // G1 task: no primitive-robot poses in these frames.
+      $('phase').textContent = f.phase;
+      $('held').textContent = f.held ? 'HOLDING' : '';
+      setStatus(`frame ${i + 1}/${frames.length}`);
+      const g1 = f.g1 as number[][] | undefined;
+      if (g1 && g1Parts.length) {
+        for (let k = 0; k < g1Parts.length; k++) {
+          const m = g1Parts[k]; const p = g1[k];
+          if (!m || !p) continue;
+          m.position.set(p[0], p[1], p[2]);
+          m.quaternion.set(p[4], p[5], p[6], p[3]);
+        }
+      }
+      controls.update();
+      renderer.render(scene, camera);
+      return;
+    }
     applyPose(parts.base, f.base);
     applyPose(parts.mast, f.mast);
     applyPose(parts.lift, f.lift);
     applyPose(parts.arm, f.arm);
     applyPose(parts.gripper, f.gripper);
     applyPose(parts.object, f.object);
+
+    // G1 frames carry a flat [x,y,z, qw,qx,qy,qz] per visual mesh.
+    const g1 = (f as any).g1 as number[][] | undefined;
+    if (g1 && g1Parts.length) {
+      for (let k = 0; k < g1Parts.length; k++) {
+        const m = g1Parts[k];
+        const p = g1[k];
+        if (!m || !p) continue;
+        m.position.set(p[0], p[1], p[2]);
+        m.quaternion.set(p[4], p[5], p[6], p[3]);   // MuJoCo [w,x,y,z]
+      }
+    }
 
     $('phase').textContent = f.phase;
     $('held').textContent = f.held ? 'HOLDING' : '';
@@ -264,7 +337,11 @@ load().then((traj) => {
     renderer.render(scene, camera);
   }
   requestAnimationFrame(tick);
-}).catch((e) => setStatus(`error: ${e.message}`));
+}).catch((e) => {
+  console.error(e);
+  setStatus(`error: ${e.message}`);
+  $('phase').textContent = 'failed to load - see console';
+});
 
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;

@@ -202,6 +202,18 @@ def main() -> int:
     if missing:
         print(f"  ! joints not found: {missing}", file=sys.stderr)
 
+    # Visual mesh geoms (group 2; group 3 is collision) so the browser can draw
+    # the real G1 inside the Gaussian splat. MuJoCo cannot render splats, and
+    # Spark cannot run physics - the trajectory is the bridge between them.
+    vis_geoms = [g for g in range(model.ngeom)
+                 if model.geom_type[g] == mujoco.mjtGeom.mjGEOM_MESH
+                 and model.geom_group[g] == 2]
+    mesh_files = []
+    for g in vis_geoms:
+        mname = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_MESH, model.geom_dataid[g])
+        mesh_files.append(mname)
+    print(f"  exporting {len(vis_geoms)} visual meshes for the browser")
+
     book_jid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, "book_free")
     book_adr = model.jnt_qposadr[book_jid]
     hand_bid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, GRASP_LINK)
@@ -324,10 +336,17 @@ def main() -> int:
                     cam.lookat[:] = [data.qpos[0], data.qpos[1], 1.0]
                     renderer.update_scene(data, camera=cam)
                     frames.append(renderer.render())
+                q = np.zeros(4)
+                poses = []
+                for g in vis_geoms:
+                    mujoco.mju_mat2Quat(q, data.geom_xmat[g])
+                    poses.append([round(float(v), 4) for v in data.geom_xpos[g]] +
+                                 [round(float(v), 4) for v in q])
                 trajectory.append({
                     "phase": label, "held": held,
                     "root": [round(float(v), 4) for v in data.qpos[0:7]],
                     "book": [round(float(v), 4) for v in data.qpos[book_adr:book_adr + 7]],
+                    "g1": poses,
                 })
 
     end = data.qpos[book_adr:book_adr + 3].copy()
@@ -346,8 +365,51 @@ def main() -> int:
         "frames": len(trajectory),
     }
     (outdir / "g1_book.json").write_text(json.dumps(summary, indent=2))
-    (outdir / "g1_book_traj.json").write_text(json.dumps(
-        {"fps": args.fps, "marble_world": args.marble, "frames": trajectory}))
+    # Export geometry FROM MuJoCo, not the source STLs.
+    #
+    # MuJoCo transforms mesh vertices when it compiles the model (it re-centres
+    # each mesh on its own frame). geom_xpos/geom_xmat are expressed against
+    # THOSE vertices, so shipping the original STLs puts every link in the wrong
+    # place. Taking model.mesh_vert straight out of the compiled model keeps the
+    # geometry and the poses consistent by construction.
+    web_mesh_dir = Path("public/assets/g1")
+    web_mesh_dir.mkdir(parents=True, exist_ok=True)
+    blob = bytearray()
+    manifest = []
+    for g in vis_geoms:
+        mid = model.geom_dataid[g]
+        v0, vn = model.mesh_vertadr[mid], model.mesh_vertnum[mid]
+        f0, fn = model.mesh_faceadr[mid], model.mesh_facenum[mid]
+        verts = np.asarray(model.mesh_vert[v0:v0 + vn], dtype=np.float32).reshape(-1)
+        faces = np.asarray(model.mesh_face[f0:f0 + fn], dtype=np.uint32).reshape(-1)
+        # A mesh can also carry a per-geom scale; fold it in here.
+        scale = np.asarray(model.mesh_scale[mid], dtype=np.float32)
+        if not np.allclose(scale, 1.0):
+            verts = (verts.reshape(-1, 3) * scale).reshape(-1)
+        manifest.append({
+            "vertOffset": len(blob), "vertCount": int(vn),
+            "faceOffset": len(blob) + verts.nbytes, "faceCount": int(fn),
+        })
+        blob += verts.tobytes()
+        blob += faces.tobytes()
+
+    (web_mesh_dir / "g1_geom.bin").write_bytes(bytes(blob))
+    (web_mesh_dir / "g1_geom.json").write_text(json.dumps(manifest))
+    shipped = manifest
+
+    (outdir / "g1_book_traj.json").write_text(json.dumps({
+        "fps": args.fps,
+        "marble_world": args.marble,
+        "book_size": list(BOOK_SIZE),
+        "g1_meshes": [f"{m}.STL" for m in mesh_files],
+        "scene": {"objects": [{"assetId": o["assetId"], "name": o["name"],
+                               "position": o["position"], "rotation": o["rotation"],
+                               "scale": o["scale"], "dimensions": o["dimensions"]}
+                              for o in objects]},
+        "frames": trajectory,
+    }))
+    print(f"  exported {len(shipped)} G1 meshes "
+          f"({sum(x['vertCount'] for x in shipped):,} verts) -> {web_mesh_dir}/g1_geom.bin")
 
     if frames:
         import imageio.v2 as imageio

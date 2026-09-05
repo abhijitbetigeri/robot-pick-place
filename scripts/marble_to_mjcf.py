@@ -45,11 +45,22 @@ def load_zup(glb_path: str) -> trimesh.Trimesh:
 
 
 def normalise(mesh: trimesh.Trimesh) -> dict:
-    """Recentre in x/y and put the floor on z=0. Returns the resulting bounds."""
+    """
+    Recentre in x/y and put the floor on z=0. Returns the resulting bounds.
+
+    The applied translation is recorded so the browser can put the Gaussian
+    splat into exactly this frame - physics runs here, the photoreal render
+    happens there, and the two only line up if both use the same transform.
+    """
     lo, hi = mesh.bounds
-    mesh.apply_translation([-(lo[0] + hi[0]) / 2.0, -(lo[1] + hi[1]) / 2.0, -lo[2]])
+    offset = [-(lo[0] + hi[0]) / 2.0, -(lo[1] + hi[1]) / 2.0, -lo[2]]
+    mesh.apply_translation(offset)
     lo, hi = mesh.bounds
     return {
+        "gltf_to_mujoco": {
+            "rotate_x_deg": 90,
+            "then_translate": [round(float(v), 5) for v in offset],
+        },
         "width_m": float(hi[0] - lo[0]),
         "depth_m": float(hi[1] - lo[1]),
         "height_m": float(hi[2] - lo[2]),

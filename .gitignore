@@ -45,3 +45,4 @@ public/assets/sim/_scene_generated.xml
 public/assets/sim/*.obj
 public/assets/sim/assets/
 assets/unitree_g1/_g1_task.xml
+public/assets/g1/

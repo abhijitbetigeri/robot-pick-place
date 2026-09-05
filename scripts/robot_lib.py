@@ -153,9 +153,34 @@ def set_base_start(model, data, x: float, y: float) -> None:
         data.qpos[adr] = val
 
 
+def sample_state(model, data, grasp_body: str) -> dict:
+    """
+    One frame of the rollout, in world coordinates, for browser playback.
+
+    The physics runs here; the photoreal render happens in the browser inside
+    the Gaussian splat. So the bridge between them is a plain trajectory of
+    world poses - no MuJoCo needed on the viewer side.
+    """
+    def body(name):
+        bid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, name)
+        p = data.xpos[bid]
+        q = data.xquat[bid]
+        return {"p": [round(float(v), 4) for v in p],
+                "q": [round(float(v), 4) for v in q]}
+
+    return {
+        "base": body("base"),
+        "mast": body("mast"),
+        "lift": body("lift"),
+        "arm": body("arm"),
+        "gripper": body("gripper"),
+        "object": body(grasp_body),
+    }
+
+
 def run_plan(model, data, plan, eq_id, grasp_body="book",
              renderer=None, cam=None, steps_per_frame=16, frames=None,
-             on_phase=None):
+             on_phase=None, trajectory=None):
     """
     Execute scripted phases, waiting for each pose to be REACHED rather than
     holding for a guessed duration (which silently truncates long moves).
@@ -184,9 +209,15 @@ def run_plan(model, data, plan, eq_id, grasp_body="book",
             mujoco.mj_step(model, data)
             step_i += 1
             elapsed += dt
-            if renderer is not None and frames is not None and step_i % steps_per_frame == 0:
-                renderer.update_scene(data, camera=cam)
-                frames.append(renderer.render())
+            if step_i % steps_per_frame == 0:
+                if renderer is not None and frames is not None:
+                    renderer.update_scene(data, camera=cam)
+                    frames.append(renderer.render())
+                if trajectory is not None:
+                    s = sample_state(model, data, grasp_body)
+                    s["held"] = bool(data.eq_active[eq_id])
+                    s["phase"] = label
+                    trajectory.append(s)
             err = np.max(np.abs(np.array([data.qpos[a] for a in jadr]) - targets))
             inside = inside + dt if err < TOL else 0.0
             if inside >= SETTLE:

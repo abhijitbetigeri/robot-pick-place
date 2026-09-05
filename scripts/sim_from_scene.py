@@ -451,12 +451,14 @@ def main() -> int:
 
     start_xy = (grasp_pt[0], grasp_pt[1] - 2.2)
     plan, p1, p2 = build_plan(objects, grasp_pt, place_pt, start_xy)
+    trajectory = []
     print(f'  path        {len(p1)} waypoints to source, {len(p2)} to target '
           f'(BFS around {len(objects)} furniture footprints)')
     trace, steps = R.run_plan(
         model, data, plan, eq_id, "book", renderer, cam,
         steps_per_frame=max(1, int(round((1 / args.fps) / model.opt.timestep))),
         frames=frames if renderer else None,
+        trajectory=trajectory,
         on_phase=lambda r: print(
             f"  {r['phase']:20} t={r['t']:5.1f}s  book=({r['object']['x']:6.2f},"
             f"{r['object']['y']:6.2f},{r['object']['z']:5.2f})"
@@ -484,6 +486,19 @@ def main() -> int:
         "phases": trace,
     }
     (outdir / f"{stem}.json").write_text(json.dumps(summary, indent=2))
+
+    # Trajectory for in-browser playback inside the Gaussian splat.
+    traj_doc = {
+        "fps": args.fps,
+        "marble_world": args.marble,
+        "scene": {"objects": [{"assetId": o["assetId"], "name": o["name"],
+                               "position": o["position"], "rotation": o["rotation"],
+                               "scale": o["scale"], "dimensions": o["dimensions"]}
+                              for o in objects]},
+        "frames": trajectory,
+    }
+    (outdir / f"{stem}_traj.json").write_text(json.dumps(traj_doc))
+    print(f"traj  -> {outdir / f'{stem}_traj.json'} ({len(trajectory)} frames)")
 
     if frames:
         import imageio.v2 as imageio
