@@ -66,9 +66,23 @@ def build_scene(scene, src, dst, marble, sim_dir: Path):
 
     if marble:
         meta, mesh_asset = S.marble_assets(marble, sim_dir)
-        marble_geom = (
-            '    <geom name="marble_visual" type="mesh" mesh="marble_shell"\n'
-            '          contype="0" conaffinity="0" group="1" rgba="0.86 0.84 0.81 1"/>')
+        # Prefer the panorama-textured room when it exists: the plain collider
+        # has no UVs and no texture, which is why it renders as grey clay.
+        tex_obj = sim_dir / f"{marble}_textured.obj"
+        tex_png = sim_dir / f"{marble}_pano.png"
+        if tex_obj.exists() and tex_png.exists():
+            mesh_asset = (
+                f'\n    <texture name="pano_tex" type="2d" file="{tex_png.name}"/>'
+                f'\n    <material name="pano_mat" texture="pano_tex" '
+                f'texuniform="false" specular="0.05" shininess="0.05"/>'
+                f'\n    <mesh name="marble_shell" file="{tex_obj.name}"/>')
+            marble_geom = (
+                '    <geom name="marble_visual" type="mesh" mesh="marble_shell"\n'
+                '          contype="0" conaffinity="0" group="1" material="pano_mat"/>')
+        else:
+            marble_geom = (
+                '    <geom name="marble_visual" type="mesh" mesh="marble_shell"\n'
+                '          contype="0" conaffinity="0" group="1" rgba="0.86 0.84 0.81 1"/>')
 
     used = {o["assetId"] for o in scene["objects"] if o["assetId"] in assets}
     for aid in sorted(used):
@@ -84,7 +98,7 @@ def build_scene(scene, src, dst, marble, sim_dir: Path):
     # the same meshdir before the include so the setting is not clobbered.
     return f"""
 <mujoco model="g1_book_task">
-  <compiler angle="radian" meshdir="assets" balanceinertia="true"/>
+  <compiler angle="radian" meshdir="assets" texturedir="assets" balanceinertia="true"/>
   <include file="{Path(G1_XML).name}"/>
   <option timestep="0.002" gravity="0 0 -9.81" integrator="implicitfast"/>
   <visual>
@@ -183,7 +197,9 @@ def main() -> int:
     model_path.write_text(
         xml.replace('file="assets/', f'file="{up}public/assets/sim/assets/')
            .replace('<mesh name="marble_shell" file="',
-                    f'<mesh name="marble_shell" file="{up}public/assets/sim/'))
+                    f'<mesh name="marble_shell" file="{up}public/assets/sim/')
+           .replace('<texture name="pano_tex" type="2d" file="',
+                    f'<texture name="pano_tex" type="2d" file="{up}public/assets/sim/'))
     model = mujoco.MjModel.from_xml_path(str(model_path))
     data = mujoco.MjData(model)
 

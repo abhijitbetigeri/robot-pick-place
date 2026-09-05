@@ -45,5 +45,17 @@
       "splats": 1920000,
       "percentile_trim": 0.5
     }
+  },
+  "textured": {
+    "obj": "public/assets/sim/new_world_textured.obj",
+    "texture": "public/assets/sim/new_world_pano.png",
+    "pano_source": "public/assets/scenarios/new_world/scene_pano.jpg",
+    "eye": [
+      0.0,
+      0.0,
+      1.571
+    ],
+    "yaw_deg": 0.0,
+    "note": "equirectangular projection from a single viewpoint; surfaces occluded from `eye` are smeared"
   }
 }
