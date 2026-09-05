@@ -52,6 +52,7 @@ scene.background = new THREE.Color(0x0b1020);
 // added to the scene without this is present but never rasterised - the page
 // looks like the splat simply failed to load.
 const spark = new SparkRenderer({ renderer });
+spark.frustumCulled = false;   // no geometry -> three.js would cull it away
 scene.add(spark);
 
 // Z-up, to match MuJoCo, so trajectory poses can be applied verbatim.
@@ -334,6 +335,7 @@ load().then((traj) => {
     setStatus(`frame ${i + 1}/${frames.length}`);
 
     controls.update();
+    try { spark.update({ scene, camera }); } catch { /* older builds auto-update */ }
     renderer.render(scene, camera);
   }
   requestAnimationFrame(tick);

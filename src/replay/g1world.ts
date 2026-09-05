@@ -37,7 +37,12 @@ $('app').appendChild(renderer.domElement);
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0a0e18);
 // Spark rasterises splats through this; a SplatMesh alone never draws.
-scene.add(new SparkRenderer({ renderer }));
+// SparkRenderer has no geometry of its own, so three.js frustum-culls it and
+// its onBeforeRender never fires - the splats are loaded but never accumulated
+// or drawn. Disable culling AND drive update() explicitly each frame.
+const spark = new SparkRenderer({ renderer });
+spark.frustumCulled = false;
+scene.add(spark);
 
 THREE.Object3D.DEFAULT_UP.set(0, 0, 1);
 const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.03, 200);
@@ -78,9 +83,23 @@ async function boot() {
   splat.scale.setScalar(num('s', 1));
   (window as any).splat = splat;
 
+  // Put the camera INSIDE the room, derived from the measured dimensions.
+  // A hardcoded position lands outside the wall for a room of a different
+  // shape, and from outside you see nothing - which reads as "the splat did
+  // not load" when it loaded perfectly well.
+  const room = a?.measured_room_m;
+  if (room && !P.has('cx')) {
+    const hw = room.width / 2, hd = room.depth / 2;
+    camera.position.set(hw * 0.45, -hd * 0.55, Math.min(1.7, room.height * 0.6));
+    controls.target.set(0, hd * 0.15, room.height * 0.4);
+    controls.update();
+  }
+
   const bb = new THREE.Vector3();
   splat.getBoundingBox(true).getSize(bb);
-  $('info').textContent = `splat ${SPLAT} · bbox ${bb.x.toFixed(1)}×${bb.y.toFixed(1)}×${bb.z.toFixed(1)}m (incl. outliers)`;
+  $('info').textContent =
+    `${SPLAT} · room ${room ? `${room.width}×${room.depth}×${room.height}m` : '?'} · ` +
+    `cam ${camera.position.toArray().map((v) => v.toFixed(1)).join(',')}`;
 
   say('loading G1…');
   const [man, buf, traj] = await Promise.all([
@@ -161,6 +180,7 @@ function tick(now: number) {
   }
 
   controls.update();
+  try { spark.update({ scene, camera }); } catch { /* older builds auto-update */ }
   renderer.render(scene, camera);
 }
 

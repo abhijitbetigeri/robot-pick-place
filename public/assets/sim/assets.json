@@ -17,5 +17,60 @@
       "mode": "shelf",
       "surface_z": 0.82
     }
+  },
+  "armchair": {
+    "assetId": "armchair",
+    "source_glb": "public/assets/furniture/armchair.glb",
+    "obj": "public/assets/sim/assets/armchair.obj",
+    "web_glb": "/assets/furniture/armchair.glb",
+    "faces": [
+      4802,
+      4802
+    ],
+    "dimensions": {
+      "width_m": 0.682,
+      "depth_m": 0.697,
+      "height_m": 0.75
+    },
+    "collision": {
+      "mode": "hull"
+    }
+  },
+  "potted_plant": {
+    "assetId": "potted_plant",
+    "source_glb": "public/assets/furniture/potted_plant.glb",
+    "obj": "public/assets/sim/assets/potted_plant.obj",
+    "web_glb": "/assets/furniture/potted_plant.glb",
+    "faces": [
+      3609,
+      3609
+    ],
+    "dimensions": {
+      "width_m": 0.885,
+      "depth_m": 0.732,
+      "height_m": 1.4
+    },
+    "collision": {
+      "mode": "hull"
+    }
+  },
+  "tv_console": {
+    "assetId": "tv_console",
+    "source_glb": "public/assets/furniture/tv_console.glb",
+    "obj": "public/assets/sim/assets/tv_console.obj",
+    "web_glb": "/assets/furniture/tv_console.glb",
+    "faces": [
+      4758,
+      4758
+    ],
+    "dimensions": {
+      "width_m": 1.234,
+      "depth_m": 0.355,
+      "height_m": 0.5
+    },
+    "collision": {
+      "mode": "shelf",
+      "surface_z": 0.47
+    }
   }
 }
