@@ -2,18 +2,20 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Navbar } from './components/Navbar';
 import { MissionMetrics } from './components/MissionMetrics';
 import { ScenarioSelector } from './components/ScenarioSelector';
+import { ThreeLivingMap3D } from './components/ThreeLivingMap3D';
 import { LivingMapCanvas } from './components/LivingMapCanvas';
 import { DigitalTwinViewer } from './components/DigitalTwinViewer';
 import { LiveEventFeed } from './components/LiveEventFeed';
 import { SimulationControls } from './components/SimulationControls';
 import { JudgeCheatSheet } from './components/JudgeCheatSheet';
 import { Robot, Bridge, EventLog, ScenarioDef } from './types';
+import { Box, Layers } from 'lucide-react';
 
 const SCENARIOS: Record<string, ScenarioDef> = {
   sf_mission_creek: {
     id: "sf_mission_creek",
     title: "SF Mission Creek (China Basin)",
-    subtitle: "Twin parallel drawbridges crossing Mission Creek canal (Maritime transit lift)",
+    subtitle: "Two parallel drawbridges crossing Mission Creek canal: 4th St (Bascule) & 3rd St (Scherzer Lift)",
     worldId: "272b9f6e-5c61-4729-9511-faf551e139de",
     marbleUrl: "https://marble.worldlabs.ai/world/272b9f6e-5c61-4729-9511-faf551e139de",
     primaryName: "4th St Bridge (Alpha)",
@@ -31,7 +33,7 @@ const SCENARIOS: Record<string, ScenarioDef> = {
   nyc_soho: {
     id: "nyc_soho",
     title: "NYC Soho Urban Canyon",
-    subtitle: "Cast-iron historic alleyways & narrow delivery corridors (Water main collapse)",
+    subtitle: "Cast-iron historic alleyways & narrow delivery corridors (Water main trench collapse)",
     worldId: "7e7a2603-0c27-4939-9c9b-2be271fa85f2",
     marbleUrl: "https://marble.worldlabs.ai/world/7e7a2603-0c27-4939-9c9b-2be271fa85f2",
     primaryName: "Mercer St Alleyway",
@@ -49,7 +51,7 @@ const SCENARIOS: Record<string, ScenarioDef> = {
   port_logistics: {
     id: "port_logistics",
     title: "Automated Port Container Terminal",
-    subtitle: "Heavy AGV freight shuttling between gantry container bays (Container blockade)",
+    subtitle: "Heavy AGV freight shuttling between gantry container bays (Container spill blockade)",
     worldId: "c6359220-4637-4a19-841e-d55cea097dd6",
     marbleUrl: "https://marble.worldlabs.ai/world/c6359220-4637-4a19-841e-d55cea097dd6",
     primaryName: "Container Bay Alpha",
@@ -69,7 +71,7 @@ const SCENARIOS: Record<string, ScenarioDef> = {
 const POS = {
   South_Depot: { x: 0.0, y: -30.0, z: 0.0 },
   Fork: { x: 0.0, y: -10.0, z: 0.0 },
-  Alpha_Entry: { x: -18.0, y: 0.0, z: 0.5 },
+  Alpha_Entry: { x: -18.0, y: -4.0, z: 0.5 },
   Alpha_Mid: { x: -18.0, y: 12.0, z: 0.5 },
   Alpha_Exit: { x: -18.0, y: 24.0, z: 0.5 },
   Detour: { x: 22.0, y: -10.0, z: 0.0 },
@@ -82,6 +84,7 @@ const POS = {
 
 export function App() {
   const [currentScenarioId, setCurrentScenarioId] = useState<string>("sf_mission_creek");
+  const [viewMode, setViewMode] = useState<"3D" | "2D">("3D");
   const scenario = SCENARIOS[currentScenarioId] || SCENARIOS["sf_mission_creek"];
 
   const [bridges, setBridges] = useState<Bridge[]>([
@@ -128,7 +131,7 @@ export function App() {
     {
       timestamp: Date.now() - 3000,
       source: "Convex_Dispatcher",
-      message: `Living Map spatial network initialized for ${scenario.title}. Primary & Detour routes OPEN.`,
+      message: `Living Map spatial network online. Both parallel bridges (4th St & 3rd St) OPEN.`,
       severity: "info",
     },
   ]);
@@ -203,7 +206,7 @@ export function App() {
       {
         timestamp: Date.now(),
         source: "Convex_Dispatcher",
-        message: `Switched active digital twin to ${sc.title}. World Labs Marble Model loaded: ${sc.worldId.slice(0, 8)}...`,
+        message: `Switched active digital twin to ${sc.title}. Both 4th St and 3rd St bridges synchronized.`,
         severity: "info",
       },
     ]);
@@ -216,8 +219,8 @@ export function App() {
         addLog(
           "Mission_Control",
           nextBlocked
-            ? `⚠️ ${b.name} manually set to BLOCKED (${scenario.incidentTitle}).`
-            : `✅ ${b.name} reopened. Normal cost profile restored.`,
+            ? `⚠️ ${b.name} drawbridge LIFTED at 50° angle (${scenario.incidentTitle}). Global costmap delta broadcasted.`
+            : `✅ ${b.name} drawbridge lowered. Normal transit restored.`,
           nextBlocked ? "warning" : "info"
         );
         return {
@@ -260,7 +263,7 @@ export function App() {
     ]);
     setDelayAvoided(0);
     setStoppagesPrevented(0);
-    addLog("Mission_Control", `🔄 Simulation reset for ${scenario.title}. Fleet stationed at start.`, "info");
+    addLog("Mission_Control", `🔄 Simulation reset for ${scenario.title}. Fleet stationed at South Depot.`, "info");
   };
 
   const executeStep = (currentStep: number) => {
@@ -278,7 +281,7 @@ export function App() {
           { ...prev[0], position: POS.Fork, status: "EN_ROUTE" },
           { ...prev[1], position: { x: 0.0, y: -20.0, z: 0.0 }, status: "EN_ROUTE" },
         ]);
-        addLog("Rover_1", `Traversing Decision Junction -> Targeting ${scenario.primaryName} (Shortest Route).`, "info");
+        addLog("Rover_1", `Traversing Junction -> Targeting ${scenario.primaryName} (Shortest 88m route).`, "info");
         break;
 
       case 2:
@@ -296,8 +299,8 @@ export function App() {
           { ...prev[1], position: POS.Fork, status: "REROUTING", activeRoute: "VIA_BRIDGE_BETA" },
         ]);
 
-        addLog("Rover_1", `🚨 OBSTACLE DETECTED at ${scenario.primaryName}! (${scenario.incidentTitle}). Firing Convex mutation...`, "critical");
-        addLog("Convex_Engine", `⚡ REACTIVE BROADCAST: Global costmap updated in 12ms. Rerouting trailing units to ${scenario.detourName}.`, "critical");
+        addLog("Rover_1", `🚨 OBSTACLE DETECTED: 4th St Drawbridge lifted! Firing Convex mutation...`, "critical");
+        addLog("Convex_Engine", `⚡ REACTIVE BROADCAST: Global costmap updated in 12ms. Rerouting Rover 2 to parallel 3rd St Bridge.`, "critical");
         setStoppagesPrevented(1);
         setDelayAvoided(scenario.delaySeconds);
         break;
@@ -307,7 +310,7 @@ export function App() {
           prev[0],
           { ...prev[1], position: POS.Detour, status: "EN_ROUTE", activeRoute: "VIA_BRIDGE_BETA" },
         ]);
-        addLog("Rover_2", `✨ Path ribbon snapped dynamically to ${scenario.detourName}. Advancing with zero stoppage delay.`, "info");
+        addLog("Rover_2", `✨ 3D Path ribbon SNAPPED across screen to 3rd St Bridge (Beta). Advancing without stopping.`, "info");
         break;
 
       case 4:
@@ -315,7 +318,7 @@ export function App() {
           prev[0],
           { ...prev[1], position: POS.Beta_Entry, status: "EN_ROUTE" },
         ]);
-        addLog("Rover_2", `Entering ${scenario.detourName} transit corridor.`, "info");
+        addLog("Rover_2", `Crossing 3rd St Bridge span across Mission Creek canal.`, "info");
         break;
 
       case 5:
@@ -323,7 +326,7 @@ export function App() {
           prev[0],
           { ...prev[1], position: POS.Beta_Exit, status: "EN_ROUTE" },
         ]);
-        addLog("Rover_2", `Cleared ${scenario.detourName}. Approaching destination gateway.`, "info");
+        addLog("Rover_2", `Cleared 3rd St Bridge. Reaching North Waterfront.`, "info");
         break;
 
       case 6:
@@ -331,7 +334,7 @@ export function App() {
           prev[0],
           { ...prev[1], position: POS.North_Goal, status: "ARRIVED" },
         ]);
-        addLog("Rover_2", `🎉 ARRIVED at ${scenario.hubGoalLabel}! Transit completed with ~${scenario.delayAvoided} saved.`, "info");
+        addLog("Rover_2", `🎉 ARRIVED at ${scenario.hubGoalLabel}! Delivery complete with ~${scenario.delayAvoided} saved.`, "info");
         setIsRunning(false);
         break;
 
@@ -394,15 +397,52 @@ export function App() {
           activeReroutes={alphaBlocked ? 1 : 0}
         />
 
+        {/* Viewport Mode Switcher Header */}
+        <div className="flex items-center justify-between bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
+          <div className="text-xs font-mono text-slate-300 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+            <span>Active Viewport: <strong className="text-white">{viewMode === "3D" ? "3D Photorealistic Digital Twin" : "2D Tactical Schematic"}</strong></span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setViewMode("3D")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-all ${
+                viewMode === "3D" ? "bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20" : "bg-slate-800 text-slate-300 hover:text-white"
+              }`}
+            >
+              <Box className="w-3.5 h-3.5" />
+              3D WebGL Viewport
+            </button>
+            <button
+              onClick={() => setViewMode("2D")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-all ${
+                viewMode === "2D" ? "bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20" : "bg-slate-800 text-slate-300 hover:text-white"
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              2D Tactical Schematic
+            </button>
+          </div>
+        </div>
+
         {/* Living Map & Controls */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <div className="lg:col-span-7 flex flex-col gap-6">
-            <LivingMapCanvas
-              robots={robots}
-              bridges={bridges}
-              onToggleBridge={handleToggleBridge}
-              scenario={scenario}
-            />
+            {viewMode === "3D" ? (
+              <ThreeLivingMap3D
+                robots={robots}
+                bridges={bridges}
+                scenario={scenario}
+                onToggleBridge={handleToggleBridge}
+              />
+            ) : (
+              <LivingMapCanvas
+                robots={robots}
+                bridges={bridges}
+                onToggleBridge={handleToggleBridge}
+                scenario={scenario}
+              />
+            )}
           </div>
 
           <div className="lg:col-span-5 flex flex-col gap-6">
