@@ -109,13 +109,17 @@ def obj_geom(o: dict, assets: dict) -> str:
     if rec is None:
         return (f'    <geom name="{name}" type="box" '
                 f'pos="{x:.3f} {y:.3f} {z:.3f}" size="{hw:.3f} {hd:.3f} {hh:.3f}" '
-                f'friction="{fr[0]} {fr[1]} {fr[2]}" rgba="0.55 0.45 0.36 1"/>')
+                f'friction="{fr[0]} {fr[1]} {fr[2]}" material="wood_mat"/>')
 
     # Real generated geometry, sitting on the floor (mesh origin is at its base).
     base_z = p["y"]
     mesh = f'mesh_{o["assetId"]}'
+    # trimesh's OBJ export drops the GLB's material, so an untinted mesh
+    # renders flat grey. Tint by category so it still reads as furniture.
+    tint = "wood_mat" if rec["collision"]["mode"] == "shelf" else "fabric_mat"
     out = (f'    <geom name="{name}_visual" type="mesh" mesh="{mesh}" '
-           f'pos="{x:.3f} {y:.3f} {base_z:.3f}" contype="0" conaffinity="0" group="1"/>')
+           f'pos="{x:.3f} {y:.3f} {base_z:.3f}" contype="0" conaffinity="0" '
+           f'group="1" material="{tint}"/>')
 
     if rec["collision"]["mode"] == "shelf":
         # A shelf's convex hull is a solid block - there would be nowhere to
@@ -186,7 +190,9 @@ def build_mjcf(scene: dict, src: dict, dst: dict, marble: str | None,
   <compiler angle="radian" balanceinertia="true"/>
   <option timestep="0.002" gravity="0 0 -9.81" integrator="implicitfast"/>
   <visual>
-    <headlight ambient="0.5 0.5 0.5" diffuse="0.7 0.7 0.7" specular="0.1 0.1 0.1"/>
+    <headlight ambient="0.32 0.32 0.34" diffuse="0.38 0.38 0.40" specular="0.08 0.08 0.08"/>
+    <quality shadowsize="4096" offsamples="8"/>
+    <map shadowclip="2.5" shadowscale="1.2"/>
     <global offwidth="1920" offheight="1080"/>
   </visual>
 
@@ -195,14 +201,22 @@ def build_mjcf(scene: dict, src: dict, dst: dict, marble: str | None,
              width="256" height="256"/>
     <texture name="floor_tex" type="2d" builtin="checker" rgb1="0.62 0.55 0.47"
              rgb2="0.55 0.48 0.41" width="256" height="256"/>
-    <material name="floor_mat" texture="floor_tex" texrepeat="8 8" reflectance="0.05"/>
-    <material name="book_mat"  rgba="0.85 0.19 0.19 1"/>
+    <material name="floor_mat" texture="floor_tex" texrepeat="8 8"
+              reflectance="0.12" shininess="0.25" specular="0.2"/>
+    <material name="book_mat"  rgba="0.78 0.16 0.16 1" shininess="0.4" specular="0.3"/>
+    <material name="wood_mat"   rgba="0.62 0.44 0.27 1" shininess="0.25" specular="0.18"/>
+    <material name="fabric_mat" rgba="0.42 0.44 0.50 1" shininess="0.05" specular="0.04"/>
 {R.ROBOT_MATERIALS_XML}
 {mesh_asset}
   </asset>
 
   <worldbody>
-    <light pos="0 0 3.2" dir="0 0 -1" diffuse="0.7 0.7 0.7"/>
+    <light name="key"  pos="-2.5 -3.0 3.4" dir="0.4 0.6 -1" directional="false"
+           diffuse="0.72 0.70 0.66" specular="0.25 0.25 0.25" castshadow="true"/>
+    <light name="fill" pos="3.5 -2.0 3.0" dir="-0.5 0.4 -1" directional="false"
+           diffuse="0.34 0.36 0.42" specular="0.05 0.05 0.05" castshadow="false"/>
+    <light name="rim"  pos="0 4.0 2.8" dir="0 -1 -0.7" directional="false"
+           diffuse="0.22 0.24 0.28" specular="0.0 0.0 0.0" castshadow="false"/>
     <geom name="floor" type="plane" size="{w/2+2:.2f} {d/2+2:.2f} 0.1"
           material="floor_mat" friction="1.0 0.05 0.01"/>
 {marble_geom}

@@ -18,10 +18,10 @@
   ],
   "end": [
     2.998,
-    1.968,
+    1.976,
     0.882
   ],
-  "distance_m": 7.19,
+  "distance_m": 7.2,
   "success": true,
   "phases": [
     {
@@ -137,50 +137,50 @@
     },
     {
       "phase": "Navigate to target 5",
-      "t": 14.32,
+      "t": 14.62,
       "object": {
-        "x": 2.998,
-        "y": 1.572,
+        "x": 2.999,
+        "y": 1.616,
         "z": 1.1
       },
       "held": true
     },
     {
       "phase": "Extend over shelf",
-      "t": 14.72,
+      "t": 15.02,
       "object": {
-        "x": 2.999,
-        "y": 1.973,
+        "x": 2.998,
+        "y": 1.951,
         "z": 1.1
       },
       "held": true
     },
     {
       "phase": "Lower to surface",
-      "t": 15.02,
+      "t": 15.32,
       "object": {
         "x": 2.998,
-        "y": 1.968,
+        "y": 1.976,
         "z": 0.882
       },
       "held": true
     },
     {
       "phase": "RELEASE book",
-      "t": 15.27,
+      "t": 15.57,
       "object": {
         "x": 2.998,
-        "y": 1.968,
+        "y": 1.976,
         "z": 0.882
       },
       "held": false
     },
     {
       "phase": "Retract",
-      "t": 15.59,
+      "t": 15.89,
       "object": {
         "x": 2.998,
-        "y": 1.968,
+        "y": 1.976,
         "z": 0.882
       },
       "held": false
