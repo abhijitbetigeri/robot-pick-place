@@ -20,6 +20,7 @@ import {
   Box,
   Bot,
   Compass,
+  ExternalLink,
 } from 'lucide-react';
 
 export const RealEstateApp: React.FC = () => {
@@ -131,7 +132,7 @@ export const RealEstateApp: React.FC = () => {
           </div>
         </div>
 
-        {/* Center Property Switcher Pill */}
+        {/* Center Property Switcher Pill & World Labs 3D World Link */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsListingModalOpen(true)}
@@ -141,6 +142,20 @@ export const RealEstateApp: React.FC = () => {
             <span className="font-bold truncate max-w-[200px]">{currentListing.title}</span>
             <span className="text-slate-500 border-l border-slate-800 pl-2">{currentListing.price}</span>
           </button>
+
+          {currentListing.marbleWorldUrl && (
+            <a
+              href={currentListing.marbleWorldUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-md"
+              title="Open Generated 3D World on World Labs Marble"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="hidden md:inline">World Labs 3D</span>
+              <ExternalLink className="w-3 h-3 text-emerald-400" />
+            </a>
+          )}
         </div>
 
         {/* Right Action Tools */}

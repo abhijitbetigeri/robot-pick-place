@@ -223,15 +223,28 @@ export const ListingDetailsModal: React.FC<ListingDetailsModalProps> = ({
                 <h3 className="text-sm font-bold text-white">{currentListing.title}</h3>
                 <p className="text-[11px] text-slate-400">{currentListing.address}, {currentListing.city}, {currentListing.state} {currentListing.zipCode}</p>
               </div>
-              <a
-                href={currentListing.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-750 text-indigo-300 text-[10px] flex items-center gap-1"
-              >
-                <span>View on {currentListing.source.toUpperCase()}</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
+              <div className="flex items-center gap-2">
+                {currentListing.marbleWorldUrl && (
+                  <a
+                    href={currentListing.marbleWorldUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold flex items-center gap-1.5 shadow-sm"
+                  >
+                    <span>World Labs 3D World</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+                <a
+                  href={currentListing.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-750 text-indigo-300 text-[10px] flex items-center gap-1"
+                >
+                  <span>View on {currentListing.source.toUpperCase()}</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
             </div>
 
             <p className="text-xs text-slate-300 leading-relaxed">{currentListing.description}</p>

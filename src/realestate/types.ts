@@ -74,6 +74,7 @@ export interface RealEstateListing {
   photos: string[];
   panoUrl?: string;
   glbUrl?: string;
+  marbleWorldUrl?: string;
   metricBounds: {
     widthMeters: number;
     depthMeters: number;
