@@ -1,0 +1,202 @@
+{
+  "source": "staged scene (Convex) -> MuJoCo",
+  "chore": "tidy",
+  "shareId": "bedroom",
+  "listing": "Cozy Sunlit Study Bedroom",
+  "marble_world": "new_world",
+  "from": {
+    "object": "Reading Nook Table",
+    "assetId": "coffee_table"
+  },
+  "to": {
+    "object": "Toy Basket",
+    "assetId": "toy_basket",
+    "placement": "staged"
+  },
+  "start": [
+    0.0,
+    0.2,
+    0.497
+  ],
+  "end": [
+    -1.303,
+    -1.544,
+    0.065
+  ],
+  "distance_m": 2.18,
+  "success": true,
+  "phases": [
+    {
+      "phase": "Navigate to surface 1",
+      "t": 0.35,
+      "object": {
+        "x": 0.0,
+        "y": 0.2,
+        "z": 0.495
+      },
+      "held": false
+    },
+    {
+      "phase": "Navigate to surface 2",
+      "t": 1.05,
+      "object": {
+        "x": 0.0,
+        "y": 0.2,
+        "z": 0.495
+      },
+      "held": false
+    },
+    {
+      "phase": "Navigate to surface 3",
+      "t": 3.09,
+      "object": {
+        "x": 0.0,
+        "y": 0.2,
+        "z": 0.495
+      },
+      "held": false
+    },
+    {
+      "phase": "Extend to toy",
+      "t": 3.45,
+      "object": {
+        "x": 0.0,
+        "y": 0.2,
+        "z": 0.495
+      },
+      "held": false
+    },
+    {
+      "phase": "GRASP toy",
+      "t": 3.7,
+      "object": {
+        "x": -0.01,
+        "y": 0.16,
+        "z": 0.495
+      },
+      "held": true,
+      "grasp_gap_m": 0.137
+    },
+    {
+      "phase": "Lift off surface",
+      "t": 4.08,
+      "object": {
+        "x": -0.006,
+        "y": 0.177,
+        "z": 0.774
+      },
+      "held": true
+    },
+    {
+      "phase": "Retract arm",
+      "t": 4.46,
+      "object": {
+        "x": -0.01,
+        "y": -0.268,
+        "z": 0.774
+      },
+      "held": true
+    },
+    {
+      "phase": "Navigate to basket 1",
+      "t": 5.1,
+      "object": {
+        "x": -0.018,
+        "y": -0.218,
+        "z": 0.774
+      },
+      "held": true
+    },
+    {
+      "phase": "Navigate to basket 2",
+      "t": 6.82,
+      "object": {
+        "x": -0.747,
+        "y": -0.199,
+        "z": 0.774
+      },
+      "held": true
+    },
+    {
+      "phase": "Navigate to basket 3",
+      "t": 8.89,
+      "object": {
+        "x": -0.72,
+        "y": -1.571,
+        "z": 0.774
+      },
+      "held": true
+    },
+    {
+      "phase": "Navigate to basket 4",
+      "t": 10.59,
+      "object": {
+        "x": -1.343,
+        "y": -1.601,
+        "z": 0.774
+      },
+      "held": true
+    },
+    {
+      "phase": "Navigate to basket 5",
+      "t": 11.95,
+      "object": {
+        "x": -1.321,
+        "y": -1.877,
+        "z": 0.774
+      },
+      "held": true
+    },
+    {
+      "phase": "Extend over basket",
+      "t": 12.34,
+      "object": {
+        "x": -1.302,
+        "y": -1.553,
+        "z": 0.774
+      },
+      "held": true
+    },
+    {
+      "phase": "Lower over rim",
+      "t": 12.73,
+      "object": {
+        "x": -1.31,
+        "y": -1.521,
+        "z": 0.547
+      },
+      "held": true
+    },
+    {
+      "phase": "RELEASE toy",
+      "t": 12.98,
+      "object": {
+        "x": -1.305,
+        "y": -1.539,
+        "z": 0.246
+      },
+      "held": false
+    },
+    {
+      "phase": "Retract arm",
+      "t": 13.3,
+      "object": {
+        "x": -1.303,
+        "y": -1.544,
+        "z": 0.065
+      },
+      "held": false
+    }
+  ],
+  "predicate": {
+    "inside_xy": true,
+    "inside_z": true,
+    "at_rest": true,
+    "dx": 0.003,
+    "dy": 0.044,
+    "z": 0.065,
+    "speed": 0.0,
+    "success": true
+  },
+  "sim_seconds": 14.8
+}

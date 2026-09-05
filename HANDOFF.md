@@ -132,7 +132,7 @@ git pull origin main
 npm install
 
 # 3. Configure environment variables (.env)
-echo "WORLD_LABS_API_KEY=tP4UlZQQjtjnko2FSASoNapBq6abIQqB" > .env
+echo "WORLD_LABS_API_KEY=<your-world-labs-key>" > .env   # see .env.example; never commit a real key
 
 # 4. Start local Vite development server
 npm run dev

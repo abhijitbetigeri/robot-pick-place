@@ -9,7 +9,15 @@ export default defineConfig({
   server: {
     port: 3001,
     host: '0.0.0.0',
-    allowedHosts: true
+    allowedHosts: true,
+    // `scripts/sim_server.py` runs the MuJoCo task. Proxying keeps the page
+    // same-origin, so the fetch needs no CORS handling and no absolute URL.
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:8765',
+        changeOrigin: false
+      }
+    }
   },
   preview: {
     port: 3001,

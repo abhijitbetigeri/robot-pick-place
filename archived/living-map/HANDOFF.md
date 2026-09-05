@@ -18,7 +18,7 @@
 ## 2. Credentials & Environment Status
 
 * **World Labs API Key:** Configured in `.env` (gitignored).
-  * Key: `tP4UlZQQjtjnko2FSASoNapBq6abIQqB`
+  * Key: `<your-world-labs-key>`
   * Status: **Verified Active (`200 OK`)**
   * Remaining Credits: **7,000.0 credits**
 * **Active World Generation ID:** `272b9f6e-5c61-4729-9511-faf551e139de`

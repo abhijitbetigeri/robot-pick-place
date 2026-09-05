@@ -9,6 +9,7 @@ import { SimulationExportModal } from './components/SimulationExportModal';
 import { ListingDetailsModal } from './components/ListingDetailsModal';
 import { FloorplanOverview2D } from './components/FloorplanOverview2D';
 import { SharePanel } from './components/SharePanel';
+import { RunChorePanel } from './components/RunChorePanel';
 import { useSharedScene } from './hooks/useSharedScene';
 import {
   Home,
@@ -272,6 +273,11 @@ export const RealEstateApp: React.FC = () => {
           isOpen={isExportModalOpen}
           onClose={() => setIsExportModalOpen(false)}
         />
+
+        {/* Run the household chore in the staged room, with before/after evidence */}
+        <div className="absolute bottom-4 left-4 z-30">
+          <RunChorePanel shared={shared} />
+        </div>
 
         {/* Real Estate Property Ingest & Gallery Modal */}
         <ListingDetailsModal

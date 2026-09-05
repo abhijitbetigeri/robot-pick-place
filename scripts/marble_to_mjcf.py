@@ -106,6 +106,16 @@ def mjcf_fragment(obj_name: str, bounds: dict, wall_t: float = 0.12) -> str:
 """
 
 
+def merge_metadata(existing: dict, generated: dict) -> dict:
+    """Refresh generated geometry fields without deleting replay calibration."""
+    merged = dict(existing)
+    merged.update(generated)
+    if (isinstance(existing.get("bounds"), dict)
+            and isinstance(generated.get("bounds"), dict)):
+        merged["bounds"] = {**existing["bounds"], **generated["bounds"]}
+    return merged
+
+
 def convert(glb_path: str, out_dir: str, max_faces: int) -> dict:
     src = Path(glb_path)
     out = Path(out_dir)
@@ -120,7 +130,7 @@ def convert(glb_path: str, out_dir: str, max_faces: int) -> dict:
     obj_name = f"{stem}.obj"
     mesh.export(out / obj_name)
 
-    meta = {
+    generated = {
         "source_glb": str(src),
         "obj": str(out / obj_name),
         "faces_in": raw_faces,
@@ -128,11 +138,15 @@ def convert(glb_path: str, out_dir: str, max_faces: int) -> dict:
         "bounds": bounds,
         "mjcf_fragment": mjcf_fragment(obj_name, bounds),
     }
-    (out / f"{stem}.mjcf.xml").write_text(meta["mjcf_fragment"])
-    (out / f"{stem}.meta.json").write_text(
-        json.dumps({k: v for k, v in meta.items() if k != "mjcf_fragment"}, indent=2)
+    meta_path = out / f"{stem}.meta.json"
+    existing = json.loads(meta_path.read_text()) if meta_path.exists() else {}
+    persisted = merge_metadata(
+        existing,
+        {k: v for k, v in generated.items() if k != "mjcf_fragment"},
     )
-    return meta
+    (out / f"{stem}.mjcf.xml").write_text(generated["mjcf_fragment"])
+    meta_path.write_text(json.dumps(persisted, indent=2))
+    return {**persisted, "mjcf_fragment": generated["mjcf_fragment"]}
 
 
 def main() -> int:

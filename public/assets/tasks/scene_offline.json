@@ -1,0 +1,189 @@
+{
+  "source": "staged scene (Convex) -> MuJoCo",
+  "shareId": "offline",
+  "listing": "Offline demo home (bundled fixture)",
+  "marble_world": null,
+  "from": {
+    "object": "Bookshelf A",
+    "assetId": "bookshelf_tall"
+  },
+  "to": {
+    "object": "Bookshelf B",
+    "assetId": "bookshelf_tall"
+  },
+  "start": [
+    -2.6,
+    1.6,
+    1.102
+  ],
+  "end": [
+    2.599,
+    -1.608,
+    1.082
+  ],
+  "distance_m": 6.11,
+  "success": true,
+  "phases": [
+    {
+      "phase": "Navigate to source 1",
+      "t": 0.4,
+      "object": {
+        "x": -2.6,
+        "y": 1.6,
+        "z": 1.082
+      },
+      "held": false
+    },
+    {
+      "phase": "Navigate to source 2",
+      "t": 1.1,
+      "object": {
+        "x": -2.6,
+        "y": 1.6,
+        "z": 1.082
+      },
+      "held": false
+    },
+    {
+      "phase": "Navigate to source 3",
+      "t": 3.15,
+      "object": {
+        "x": -2.6,
+        "y": 1.6,
+        "z": 1.082
+      },
+      "held": false
+    },
+    {
+      "phase": "Extend to book",
+      "t": 3.46,
+      "object": {
+        "x": -2.6,
+        "y": 1.6,
+        "z": 1.082
+      },
+      "held": false
+    },
+    {
+      "phase": "GRASP book",
+      "t": 3.71,
+      "object": {
+        "x": -2.6,
+        "y": 1.584,
+        "z": 1.082
+      },
+      "held": true,
+      "grasp_gap_m": 0.153
+    },
+    {
+      "phase": "Lift off surface",
+      "t": 4.09,
+      "object": {
+        "x": -2.601,
+        "y": 1.584,
+        "z": 1.301
+      },
+      "held": true
+    },
+    {
+      "phase": "Retract arm",
+      "t": 4.48,
+      "object": {
+        "x": -2.601,
+        "y": 1.145,
+        "z": 1.3
+      },
+      "held": true
+    },
+    {
+      "phase": "Navigate to target 1",
+      "t": 5.12,
+      "object": {
+        "x": -2.601,
+        "y": 1.194,
+        "z": 1.3
+      },
+      "held": true
+    },
+    {
+      "phase": "Navigate to target 2",
+      "t": 7.86,
+      "object": {
+        "x": 1.676,
+        "y": 1.212,
+        "z": 1.3
+      },
+      "held": true
+    },
+    {
+      "phase": "Navigate to target 3",
+      "t": 10.29,
+      "object": {
+        "x": 1.699,
+        "y": -1.619,
+        "z": 1.3
+      },
+      "held": true
+    },
+    {
+      "phase": "Navigate to target 4",
+      "t": 12.3,
+      "object": {
+        "x": 2.583,
+        "y": -1.588,
+        "z": 1.3
+      },
+      "held": true
+    },
+    {
+      "phase": "Navigate to target 5",
+      "t": 13.7,
+      "object": {
+        "x": 2.599,
+        "y": -1.956,
+        "z": 1.3
+      },
+      "held": true
+    },
+    {
+      "phase": "Extend over shelf",
+      "t": 14.1,
+      "object": {
+        "x": 2.599,
+        "y": -1.64,
+        "z": 1.3
+      },
+      "held": true
+    },
+    {
+      "phase": "Lower to surface",
+      "t": 14.41,
+      "object": {
+        "x": 2.599,
+        "y": -1.608,
+        "z": 1.082
+      },
+      "held": true
+    },
+    {
+      "phase": "RELEASE book",
+      "t": 14.66,
+      "object": {
+        "x": 2.599,
+        "y": -1.608,
+        "z": 1.082
+      },
+      "held": false
+    },
+    {
+      "phase": "Retract",
+      "t": 14.97,
+      "object": {
+        "x": 2.599,
+        "y": -1.608,
+        "z": 1.082
+      },
+      "held": false
+    }
+  ]
+}

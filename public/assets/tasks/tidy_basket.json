@@ -1,0 +1,176 @@
+{
+  "task": "Tidy up: move the toy from the coffee table into the toy basket",
+  "robot": "Stretch-style mobile manipulator (scripts/robot_lib.py)",
+  "simulator": "MuJoCo 3.12.0",
+  "basket_xy": [
+    1.8,
+    1.2
+  ],
+  "start": {
+    "x": -1.5,
+    "y": 1.0,
+    "z": 0.497,
+    "surface": "coffee_table"
+  },
+  "end": {
+    "x": 1.799,
+    "y": 1.19,
+    "z": 0.065,
+    "surface": "toy_basket"
+  },
+  "predicate": {
+    "inside_xy": true,
+    "inside_z": true,
+    "at_rest": true,
+    "dx": 0.001,
+    "dy": 0.01,
+    "z": 0.065,
+    "speed": 0.0,
+    "success": true
+  },
+  "success": true,
+  "phases": [
+    {
+      "phase": "Approach table",
+      "t": 1.71,
+      "object": {
+        "x": -1.5,
+        "y": 1.0,
+        "z": 0.495
+      },
+      "held": false
+    },
+    {
+      "phase": "Align with table",
+      "t": 3.7,
+      "object": {
+        "x": -1.5,
+        "y": 1.0,
+        "z": 0.495
+      },
+      "held": false
+    },
+    {
+      "phase": "Extend to toy",
+      "t": 4.06,
+      "object": {
+        "x": -1.5,
+        "y": 1.0,
+        "z": 0.495
+      },
+      "held": false
+    },
+    {
+      "phase": "GRASP toy",
+      "t": 4.31,
+      "object": {
+        "x": -1.501,
+        "y": 0.975,
+        "z": 0.495
+      },
+      "held": true,
+      "grasp_gap_m": 0.136
+    },
+    {
+      "phase": "Lift off table",
+      "t": 4.69,
+      "object": {
+        "x": -1.501,
+        "y": 0.982,
+        "z": 0.774
+      },
+      "held": true
+    },
+    {
+      "phase": "Retract arm",
+      "t": 5.07,
+      "object": {
+        "x": -1.501,
+        "y": 0.541,
+        "z": 0.774
+      },
+      "held": true
+    },
+    {
+      "phase": "Back away",
+      "t": 7.07,
+      "object": {
+        "x": -1.501,
+        "y": -0.325,
+        "z": 0.774
+      },
+      "held": true
+    },
+    {
+      "phase": "Drive to basket",
+      "t": 9.31,
+      "object": {
+        "x": 1.815,
+        "y": -0.141,
+        "z": 0.774
+      },
+      "held": true
+    },
+    {
+      "phase": "Align with basket",
+      "t": 11.32,
+      "object": {
+        "x": 1.799,
+        "y": 0.741,
+        "z": 0.774
+      },
+      "held": true
+    },
+    {
+      "phase": "Extend over basket",
+      "t": 11.7,
+      "object": {
+        "x": 1.8,
+        "y": 1.202,
+        "z": 0.774
+      },
+      "held": true
+    },
+    {
+      "phase": "Lower over rim",
+      "t": 12.1,
+      "object": {
+        "x": 1.799,
+        "y": 1.168,
+        "z": 0.547
+      },
+      "held": true
+    },
+    {
+      "phase": "RELEASE toy",
+      "t": 12.35,
+      "object": {
+        "x": 1.799,
+        "y": 1.185,
+        "z": 0.246
+      },
+      "held": false
+    },
+    {
+      "phase": "Retract arm",
+      "t": 12.66,
+      "object": {
+        "x": 1.799,
+        "y": 1.19,
+        "z": 0.065
+      },
+      "held": false
+    },
+    {
+      "phase": "Withdraw",
+      "t": 14.66,
+      "object": {
+        "x": 1.799,
+        "y": 1.19,
+        "z": 0.065
+      },
+      "held": false
+    }
+  ],
+  "sim_seconds": 16.16
+}

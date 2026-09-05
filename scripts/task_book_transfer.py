@@ -17,12 +17,16 @@ Outputs:
 
 Usage:
   python scripts/task_book_transfer.py [--seconds 26] [--width 960] [--height 540]
+  python scripts/task_book_transfer.py --no-video --validate-summary --outdir /tmp/book-transfer-smoke
 """
 
 import argparse
 import json
 import os
+import sys
+import time
 from pathlib import Path
+from types import SimpleNamespace
 
 import mujoco
 import numpy as np
@@ -53,6 +57,29 @@ GRIP_DY0 = 0.62
 GRIP_DZ0 = 0.33
 ARM_EXTENDED = 0.42
 GRASP_MAX_DIST = 0.18      # refuse to weld if the gripper isn't actually there
+SUMMARY_NAME = "book_transfer.json"
+REQUIRED_PHASES = (
+    "Approach Bedroom 1",
+    "Align with Shelf A",
+    "Extend to book",
+    "GRASP book",
+    "Lift off shelf",
+    "Retract arm",
+    "Back out of alcove",
+    "Cross to doorway",
+    "Through the door",
+    "Approach Bedroom 2",
+    "Align with Shelf B",
+    "Extend over shelf",
+    "Lower to surface",
+    "RELEASE book",
+    "Retract from shelf",
+    "Withdraw",
+)
+
+
+class SummaryValidationError(ValueError):
+    """Raised when a generated book-transfer summary is not a valid smoke result."""
 
 
 def base_pose_for(target, arm_y):
@@ -248,6 +275,49 @@ def build_plan():
     ]
 
 
+def assert_summary_valid(summary: dict) -> None:
+    required_keys = {
+        "task", "robot", "simulator", "start", "end", "distance_travelled_m",
+        "crossed_rooms", "success", "phases",
+    }
+    missing_keys = sorted(required_keys - set(summary))
+    if missing_keys:
+        raise SummaryValidationError(f"missing summary keys: {', '.join(missing_keys)}")
+
+    if summary["success"] is not True:
+        raise SummaryValidationError("success must be true")
+    if summary["crossed_rooms"] is not True:
+        raise SummaryValidationError("crossed_rooms must be true")
+
+    start = summary["start"]
+    end = summary["end"]
+    if start.get("room") != "Bedroom 1" or start.get("shelf") != "A":
+        raise SummaryValidationError("start must be Bedroom 1 Shelf A")
+    if end.get("room") != "Bedroom 2" or end.get("shelf") != "B":
+        raise SummaryValidationError("end must be Bedroom 2 Shelf B")
+
+    phases = summary["phases"]
+    if not isinstance(phases, list):
+        raise SummaryValidationError("phases must be a list")
+    phase_names = [phase.get("phase") for phase in phases if isinstance(phase, dict)]
+    missing_phases = [phase for phase in REQUIRED_PHASES if phase not in phase_names]
+    if missing_phases:
+        raise SummaryValidationError(f"missing phase: {missing_phases[0]}")
+    if phase_names != list(REQUIRED_PHASES):
+        raise SummaryValidationError("phases must match the required task order")
+
+
+def validate_summary(path: Path, *, started_at_ns: int | None = None) -> dict:
+    if not path.exists():
+        raise SummaryValidationError(f"summary not found: {path}")
+    if started_at_ns is not None and path.stat().st_mtime_ns < started_at_ns:
+        raise SummaryValidationError("summary predates the invoked run")
+
+    summary = json.loads(path.read_text(encoding="utf-8"))
+    assert_summary_valid(summary)
+    return summary
+
+
 def room_of(x: float) -> str:
     return "Bedroom 1" if x < WALL_X else "Bedroom 2"
 
@@ -288,15 +358,19 @@ def attach(model, data, eq_id: int) -> float:
     return dist
 
 
-def main() -> int:
+def parse_args(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--width", type=int, default=960)
     ap.add_argument("--height", type=int, default=540)
     ap.add_argument("--fps", type=int, default=30)
     ap.add_argument("--outdir", default="public/assets/tasks")
     ap.add_argument("--no-video", action="store_true")
-    args = ap.parse_args()
+    ap.add_argument("--validate-summary", action="store_true",
+                    help="fail unless the freshly generated JSON summary is valid")
+    return ap.parse_args(argv)
 
+
+def run_task(args) -> int:
     model = mujoco.MjModel.from_xml_string(build_mjcf())
     data = mujoco.MjData(model)
     eq_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_EQUALITY, "grasp")
@@ -398,7 +472,8 @@ def main() -> int:
         "success": bool(placed_on_b),
         "phases": trace,
     }
-    (outdir / "book_transfer.json").write_text(json.dumps(summary, indent=2))
+    summary_path = outdir / SUMMARY_NAME
+    summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
 
     if renderer is not None and frames:
         import imageio.v2 as imageio
@@ -406,12 +481,49 @@ def main() -> int:
         imageio.mimwrite(path, frames, fps=args.fps, quality=8,
                          macro_block_size=None)
         print(f"\nvideo  -> {path} ({len(frames)} frames)")
-    print(f"trace  -> {outdir / 'book_transfer.json'}")
+    print(f"trace  -> {summary_path}")
 
     print(f"\nBook: {summary['start']['room']} Shelf A -> {summary['end']['room']} Shelf B")
     print(f"Travelled {summary['distance_travelled_m']} m across rooms")
     print(f"SUCCESS: {summary['success']}")
     return 0 if summary["success"] else 1
+
+
+def run_smoke(outdir: Path, *, no_video: bool, width: int = 960, height: int = 540, fps: int = 30) -> int:
+    outdir.mkdir(parents=True, exist_ok=True)
+    started_at_ns = time.time_ns()
+    args = SimpleNamespace(
+        width=width,
+        height=height,
+        fps=fps,
+        outdir=str(outdir),
+        no_video=no_video,
+        validate_summary=False,
+    )
+    result = run_task(args)
+    if result != 0:
+        return result
+
+    try:
+        validate_summary(outdir / SUMMARY_NAME, started_at_ns=started_at_ns)
+    except (OSError, json.JSONDecodeError, SummaryValidationError) as exc:
+        print(f"summary validation failed: {exc}", file=sys.stderr)
+        return 1
+    print("summary validation: OK")
+    return 0
+
+
+def main(argv=None) -> int:
+    args = parse_args(argv)
+    if args.validate_summary:
+        return run_smoke(
+            Path(args.outdir),
+            no_video=args.no_video,
+            width=args.width,
+            height=args.height,
+            fps=args.fps,
+        )
+    return run_task(args)
 
 
 if __name__ == "__main__":
