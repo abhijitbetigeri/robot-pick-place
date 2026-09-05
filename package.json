@@ -10,6 +10,7 @@
     "convex:dev": "convex dev"
   },
   "dependencies": {
+    "@sparkjsdev/spark": "^2.1.0",
     "@types/three": "^0.185.4",
     "convex": "^1.45.0",
     "lucide-react": "^0.475.0",

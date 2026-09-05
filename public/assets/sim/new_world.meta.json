@@ -4,6 +4,14 @@
   "faces_in": 167323,
   "faces_out": 167323,
   "bounds": {
+    "gltf_to_mujoco": {
+      "rotate_x_deg": 90,
+      "then_translate": [
+        -0.28151,
+        -1.84866,
+        0.04088
+      ]
+    },
     "width_m": 4.494548097960546,
     "depth_m": 5.664279741996623,
     "height_m": 2.8570020637004063,
@@ -16,6 +24,26 @@
       2.247274048980273,
       2.8321398709983114,
       2.8570020637004063
-    ]
+    ],
+    "spz_to_mujoco": {
+      "rotate_x_deg": 90,
+      "then_translate": [
+        -0.27002,
+        1.62207,
+        2.79688
+      ],
+      "measured_room_m": {
+        "width": 4.437,
+        "depth": 5.162,
+        "height": 2.828
+      },
+      "raw_bbox_m": [
+        11.52,
+        20.37,
+        17.23
+      ],
+      "splats": 1920000,
+      "percentile_trim": 0.5
+    }
   }
 }

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Photoreal Replay · Marble + MuJoCo</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:#080c16; color:#e6edf7;
+           font:14px/1.4 'Outfit',system-ui,-apple-system,sans-serif; overflow:hidden; }
+    #app { position:fixed; inset:0; }
+    canvas { display:block; }
+    .hud { position:fixed; z-index:10; backdrop-filter:blur(10px);
+           background:rgba(9,14,26,.72); border:1px solid rgba(255,255,255,.10);
+           border-radius:12px; }
+    #top { top:14px; left:14px; padding:12px 16px; }
+    #top h1 { margin:0 0 4px; font-size:14px; font-weight:700; letter-spacing:-.01em; }
+    #top .sub { font-size:11px; color:#8fa3bf; font-family:ui-monospace,monospace; }
+    .chip { display:inline-block; margin-top:8px; padding:3px 9px; border-radius:999px;
+            font-size:10px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
+    .marble { background:rgba(52,211,153,.14); color:#34d399; border:1px solid rgba(52,211,153,.35); }
+    #held { background:rgba(251,191,36,.16); color:#fbbf24; border:1px solid rgba(251,191,36,.4);
+            margin-left:6px; }
+    #held:empty { display:none; }
+    #bottom { bottom:14px; left:14px; right:14px; padding:10px 14px;
+              display:flex; align-items:center; gap:12px; }
+    #play { width:34px; height:34px; border-radius:9px; border:1px solid rgba(255,255,255,.14);
+            background:rgba(255,255,255,.06); color:#e6edf7; cursor:pointer; font-size:12px; }
+    #play:hover { background:rgba(255,255,255,.12); }
+    #scrub { flex:1; accent-color:#34d399; }
+    #phase { min-width:190px; font-weight:600; }
+    #status { font-family:ui-monospace,monospace; font-size:11px; color:#8fa3bf; min-width:130px;
+              text-align:right; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <div class="hud" id="top">
+    <h1>Cozy Sunlit Study Bedroom</h1>
+    <div class="sub">MuJoCo rollout replayed inside the generated world</div>
+    <span class="chip marble" id="worldlabel">loading…</span>
+    <span class="chip" id="held"></span>
+  </div>
+
+  <div class="hud" id="bottom">
+    <button id="play">❚❚</button>
+    <span id="phase">—</span>
+    <input id="scrub" type="range" min="0" max="1" value="0" step="1"/>
+    <span id="status">…</span>
+  </div>
+
+  <script type="module" src="/src/replay/main.ts"></script>
+</body>
+</html>
