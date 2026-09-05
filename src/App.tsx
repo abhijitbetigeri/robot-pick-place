@@ -18,6 +18,7 @@ const SCENARIOS: Record<string, ScenarioDef> = {
     subtitle: "Two parallel drawbridges crossing Mission Creek canal: 4th St (Bascule) & 3rd St (Scherzer Lift)",
     worldId: "272b9f6e-5c61-4729-9511-faf551e139de",
     marbleUrl: "https://marble.worldlabs.ai/world/272b9f6e-5c61-4729-9511-faf551e139de",
+    environmentType: "waterway_bridges",
     primaryName: "4th St Bridge (Alpha)",
     detourName: "3rd St Bridge (Beta)",
     incidentType: "MAINTENANCE_DRAWBRIDGE_LIFT",
@@ -29,63 +30,91 @@ const SCENARIOS: Record<string, ScenarioDef> = {
     waterChannelLabel: "≈ MISSION CREEK CANAL WATERWAY ≈",
     hubStartLabel: "South Depot (China Basin)",
     hubGoalLabel: "North Goal (Oracle Park Hub)",
+    positions: {
+      start: { x: 0.0, y: -30.0, z: 0.0 },
+      fork: { x: 0.0, y: -12.0, z: 0.0 },
+      primaryEntry: { x: -18.0, y: -4.0, z: 0.5 },
+      primaryMid: { x: -18.0, y: 10.0, z: 0.5 },
+      primaryExit: { x: -18.0, y: 24.0, z: 0.5 },
+      detourApproach: { x: 22.0, y: -12.0, z: 0.0 },
+      detourEntry: { x: 22.0, y: -4.0, z: 0.5 },
+      detourMid: { x: 22.0, y: 10.0, z: 0.5 },
+      detourExit: { x: 22.0, y: 24.0, z: 0.5 },
+      northApproach: { x: 0.0, y: 28.0, z: 0.0 },
+      goal: { x: 0.0, y: 38.0, z: 0.0 },
+    },
   },
   nyc_soho: {
     id: "nyc_soho",
-    title: "NYC Soho Urban Canyon",
-    subtitle: "Cast-iron historic alleyways & narrow delivery corridors (Water main trench collapse)",
+    title: "NYC Soho Urban Grid",
+    subtitle: "High-density Manhattan block: Mercer St narrow alleyway vs Broadway Avenue detour",
     worldId: "7e7a2603-0c27-4939-9c9b-2be271fa85f2",
     marbleUrl: "https://marble.worldlabs.ai/world/7e7a2603-0c27-4939-9c9b-2be271fa85f2",
+    environmentType: "urban_grid",
     primaryName: "Mercer St Alleyway",
-    detourName: "Broadway Avenue",
+    detourName: "Broadway Avenue Corridor",
     incidentType: "UTILITY_TRENCH_COLLAPSE",
-    incidentTitle: "Utility Trench Hazard & Roadwork",
+    incidentTitle: "Water Main Trench Collapse & Emergency Roadwork",
     primaryDistance: "65m",
-    detourDistance: "105m",
+    detourDistance: "110m",
     delayAvoided: "11m 45s",
     delaySeconds: 705,
-    waterChannelLabel: "🏙️ PRINCE / MERCER URBAN CANYON 🏙️",
+    waterChannelLabel: "🏙️ PRINCE ST / MERCER ST URBAN CORRIDOR 🏙️",
     hubStartLabel: "Soho Micro-Hub Staging",
-    hubGoalLabel: "Customer Dropoff Hub",
+    hubGoalLabel: "Customer Delivery Hub (Spring St)",
+    positions: {
+      start: { x: 0.0, y: -32.0, z: 0.0 },
+      fork: { x: 0.0, y: -16.0, z: 0.0 },
+      primaryEntry: { x: 0.0, y: -4.0, z: 0.0 },
+      primaryMid: { x: 0.0, y: 10.0, z: 0.0 },
+      primaryExit: { x: 0.0, y: 24.0, z: 0.0 },
+      detourApproach: { x: 26.0, y: -16.0, z: 0.0 },
+      detourEntry: { x: 26.0, y: 0.0, z: 0.0 },
+      detourMid: { x: 26.0, y: 16.0, z: 0.0 },
+      detourExit: { x: 26.0, y: 28.0, z: 0.0 },
+      northApproach: { x: 0.0, y: 28.0, z: 0.0 },
+      goal: { x: 0.0, y: 38.0, z: 0.0 },
+    },
   },
   port_logistics: {
     id: "port_logistics",
     title: "Automated Port Container Terminal",
-    subtitle: "Heavy AGV freight shuttling between gantry container bays (Container spill blockade)",
+    subtitle: "Intermodal shipping container depot: Gantry Bay Alpha vs Bay Beta Rail Bypass",
     worldId: "c6359220-4637-4a19-841e-d55cea097dd6",
     marbleUrl: "https://marble.worldlabs.ai/world/c6359220-4637-4a19-841e-d55cea097dd6",
-    primaryName: "Container Bay Alpha",
-    detourName: "Container Corridor Beta",
+    environmentType: "port_depot",
+    primaryName: "Gantry Crane Bay Alpha",
+    detourName: "Stacking Yard Bay Beta",
     incidentType: "GANTRY_CONTAINER_SPILL",
-    incidentTitle: "Fallen Freight Container Blockade",
-    primaryDistance: "95m",
-    detourDistance: "145m",
+    incidentTitle: "Overturned 40ft Freight Container Blockade",
+    primaryDistance: "90m",
+    detourDistance: "140m",
     delayAvoided: "14m 20s",
     delaySeconds: 860,
-    waterChannelLabel: "🚢 GANTRY CRANE RAIL CORRIDOR 🚢",
-    hubStartLabel: "Berth 12 AGV Depot",
-    hubGoalLabel: "Intermodal Freight Terminal",
+    waterChannelLabel: "🚢 GANTRY CRANE AUTOMATED AGV LANES 🚢",
+    hubStartLabel: "Berth 12 AGV Staging",
+    hubGoalLabel: "Intermodal Railhead Freight Hub",
+    positions: {
+      start: { x: -15.0, y: -30.0, z: 0.0 },
+      fork: { x: -15.0, y: -12.0, z: 0.0 },
+      primaryEntry: { x: -15.0, y: -2.0, z: 0.0 },
+      primaryMid: { x: -15.0, y: 12.0, z: 0.0 },
+      primaryExit: { x: -15.0, y: 24.0, z: 0.0 },
+      detourApproach: { x: 18.0, y: -12.0, z: 0.0 },
+      detourEntry: { x: 18.0, y: 0.0, z: 0.0 },
+      detourMid: { x: 18.0, y: 14.0, z: 0.0 },
+      detourExit: { x: 18.0, y: 26.0, z: 0.0 },
+      northApproach: { x: 0.0, y: 28.0, z: 0.0 },
+      goal: { x: 0.0, y: 38.0, z: 0.0 },
+    },
   },
-};
-
-const POS = {
-  South_Depot: { x: 0.0, y: -30.0, z: 0.0 },
-  Fork: { x: 0.0, y: -10.0, z: 0.0 },
-  Alpha_Entry: { x: -18.0, y: -4.0, z: 0.5 },
-  Alpha_Mid: { x: -18.0, y: 12.0, z: 0.5 },
-  Alpha_Exit: { x: -18.0, y: 24.0, z: 0.5 },
-  Detour: { x: 22.0, y: -10.0, z: 0.0 },
-  Beta_Entry: { x: 22.0, y: 0.0, z: 0.5 },
-  Beta_Mid: { x: 22.0, y: 12.0, z: 0.5 },
-  Beta_Exit: { x: 22.0, y: 24.0, z: 0.5 },
-  North_Approach: { x: 0.0, y: 28.0, z: 0.0 },
-  North_Goal: { x: 0.0, y: 38.0, z: 0.0 },
 };
 
 export function App() {
   const [currentScenarioId, setCurrentScenarioId] = useState<string>("sf_mission_creek");
   const [viewMode, setViewMode] = useState<"3D" | "2D">("3D");
   const scenario = SCENARIOS[currentScenarioId] || SCENARIOS["sf_mission_creek"];
+  const pos = scenario.positions;
 
   const [bridges, setBridges] = useState<Bridge[]>([
     {
@@ -108,7 +137,7 @@ export function App() {
     {
       robotId: "Rover_1",
       role: "LEAD_SCOUT",
-      position: POS.South_Depot,
+      position: pos.start,
       heading: 90,
       status: "IDLE",
       activeRoute: "VIA_BRIDGE_ALPHA",
@@ -118,7 +147,7 @@ export function App() {
     {
       robotId: "Rover_2",
       role: "DELIVERY_UNIT",
-      position: { x: 0.0, y: -35.0, z: 0.0 },
+      position: { x: pos.start.x, y: pos.start.y - 4.0, z: pos.start.z },
       heading: 90,
       status: "IDLE",
       activeRoute: "VIA_BRIDGE_ALPHA",
@@ -131,7 +160,7 @@ export function App() {
     {
       timestamp: Date.now() - 3000,
       source: "Convex_Dispatcher",
-      message: `Living Map spatial network online. Both parallel bridges (4th St & 3rd St) OPEN.`,
+      message: `Living Map spatial network online for ${scenario.title}. Primary & Detour paths OPEN.`,
       severity: "info",
     },
   ]);
@@ -164,6 +193,7 @@ export function App() {
     setSimStep(0);
     setDelayAvoided(0);
     setStoppagesPrevented(0);
+    const p = sc.positions;
     setBridges([
       {
         bridgeId: "Bridge_Alpha",
@@ -184,7 +214,7 @@ export function App() {
       {
         robotId: "Rover_1",
         role: "LEAD_SCOUT",
-        position: POS.South_Depot,
+        position: p.start,
         heading: 90,
         status: "IDLE",
         activeRoute: "VIA_BRIDGE_ALPHA",
@@ -194,7 +224,7 @@ export function App() {
       {
         robotId: "Rover_2",
         role: "DELIVERY_UNIT",
-        position: { x: 0.0, y: -35.0, z: 0.0 },
+        position: { x: p.start.x, y: p.start.y - 4.0, z: p.start.z },
         heading: 90,
         status: "IDLE",
         activeRoute: "VIA_BRIDGE_ALPHA",
@@ -206,7 +236,7 @@ export function App() {
       {
         timestamp: Date.now(),
         source: "Convex_Dispatcher",
-        message: `Switched active digital twin to ${sc.title}. Both 4th St and 3rd St bridges synchronized.`,
+        message: `Switched active digital twin to ${sc.title}. Topo graph reconfigured to 1:1 metric geometry.`,
         severity: "info",
       },
     ]);
@@ -219,8 +249,8 @@ export function App() {
         addLog(
           "Mission_Control",
           nextBlocked
-            ? `⚠️ ${b.name} drawbridge LIFTED at 50° angle (${scenario.incidentTitle}). Global costmap delta broadcasted.`
-            : `✅ ${b.name} drawbridge lowered. Normal transit restored.`,
+            ? `⚠️ ${b.name} set to BLOCKED (${scenario.incidentTitle}). Global costmap delta broadcasted.`
+            : `✅ ${b.name} reopened. Normal transit restored.`,
           nextBlocked ? "warning" : "info"
         );
         return {
@@ -243,7 +273,7 @@ export function App() {
       {
         robotId: "Rover_1",
         role: "LEAD_SCOUT",
-        position: POS.South_Depot,
+        position: pos.start,
         heading: 90,
         status: "IDLE",
         activeRoute: "VIA_BRIDGE_ALPHA",
@@ -253,7 +283,7 @@ export function App() {
       {
         robotId: "Rover_2",
         role: "DELIVERY_UNIT",
-        position: { x: 0.0, y: -35.0, z: 0.0 },
+        position: { x: pos.start.x, y: pos.start.y - 4.0, z: pos.start.z },
         heading: 90,
         status: "IDLE",
         activeRoute: "VIA_BRIDGE_ALPHA",
@@ -263,25 +293,25 @@ export function App() {
     ]);
     setDelayAvoided(0);
     setStoppagesPrevented(0);
-    addLog("Mission_Control", `🔄 Simulation reset for ${scenario.title}. Fleet stationed at South Depot.`, "info");
+    addLog("Mission_Control", `🔄 Simulation reset for ${scenario.title}. Fleet stationed at start.`, "info");
   };
 
   const executeStep = (currentStep: number) => {
     switch (currentStep) {
       case 0:
         setRobots(prev => [
-          { ...prev[0], position: POS.South_Depot, status: "EN_ROUTE" },
-          { ...prev[1], position: POS.South_Depot, status: "EN_ROUTE" },
+          { ...prev[0], position: pos.start, status: "EN_ROUTE" },
+          { ...prev[1], position: pos.start, status: "EN_ROUTE" },
         ]);
         addLog("Fleet_Coordinator", `🚀 Fleet departing ${scenario.hubStartLabel} targeting ${scenario.hubGoalLabel}.`, "info");
         break;
 
       case 1:
         setRobots(prev => [
-          { ...prev[0], position: POS.Fork, status: "EN_ROUTE" },
-          { ...prev[1], position: { x: 0.0, y: -20.0, z: 0.0 }, status: "EN_ROUTE" },
+          { ...prev[0], position: pos.fork, status: "EN_ROUTE" },
+          { ...prev[1], position: { x: pos.start.x, y: (pos.start.y + pos.fork.y) / 2, z: 0.0 }, status: "EN_ROUTE" },
         ]);
-        addLog("Rover_1", `Traversing Junction -> Targeting ${scenario.primaryName} (Shortest 88m route).`, "info");
+        addLog("Rover_1", `Traversing Junction -> Targeting ${scenario.primaryName} (Shortest ${scenario.primaryDistance} route).`, "info");
         break;
 
       case 2:
@@ -295,12 +325,12 @@ export function App() {
         } : b));
 
         setRobots(prev => [
-          { ...prev[0], position: POS.Alpha_Entry, status: "TRAPPED", activeRoute: "VIA_BRIDGE_ALPHA" },
-          { ...prev[1], position: POS.Fork, status: "REROUTING", activeRoute: "VIA_BRIDGE_BETA" },
+          { ...prev[0], position: pos.primaryEntry, status: "TRAPPED", activeRoute: "VIA_BRIDGE_ALPHA" },
+          { ...prev[1], position: pos.fork, status: "REROUTING", activeRoute: "VIA_BRIDGE_BETA" },
         ]);
 
-        addLog("Rover_1", `🚨 OBSTACLE DETECTED: 4th St Drawbridge lifted! Firing Convex mutation...`, "critical");
-        addLog("Convex_Engine", `⚡ REACTIVE BROADCAST: Global costmap updated in 12ms. Rerouting Rover 2 to parallel 3rd St Bridge.`, "critical");
+        addLog("Rover_1", `🚨 OBSTACLE DETECTED at ${scenario.primaryName}! (${scenario.incidentTitle}). Firing Convex mutation...`, "critical");
+        addLog("Convex_Engine", `⚡ REACTIVE BROADCAST: Global costmap updated in 12ms. Rerouting Rover 2 to ${scenario.detourName}.`, "critical");
         setStoppagesPrevented(1);
         setDelayAvoided(scenario.delaySeconds);
         break;
@@ -308,33 +338,33 @@ export function App() {
       case 3:
         setRobots(prev => [
           prev[0],
-          { ...prev[1], position: POS.Detour, status: "EN_ROUTE", activeRoute: "VIA_BRIDGE_BETA" },
+          { ...prev[1], position: pos.detourApproach, status: "EN_ROUTE", activeRoute: "VIA_BRIDGE_BETA" },
         ]);
-        addLog("Rover_2", `✨ 3D Path ribbon SNAPPED across screen to 3rd St Bridge (Beta). Advancing without stopping.`, "info");
+        addLog("Rover_2", `✨ 3D Path ribbon SNAPPED across screen to ${scenario.detourName}. Advancing without stopping.`, "info");
         break;
 
       case 4:
         setRobots(prev => [
           prev[0],
-          { ...prev[1], position: POS.Beta_Entry, status: "EN_ROUTE" },
+          { ...prev[1], position: pos.detourEntry, status: "EN_ROUTE" },
         ]);
-        addLog("Rover_2", `Crossing 3rd St Bridge span across Mission Creek canal.`, "info");
+        addLog("Rover_2", `Traversing ${scenario.detourName} bypass corridor.`, "info");
         break;
 
       case 5:
         setRobots(prev => [
           prev[0],
-          { ...prev[1], position: POS.Beta_Exit, status: "EN_ROUTE" },
+          { ...prev[1], position: pos.detourExit, status: "EN_ROUTE" },
         ]);
-        addLog("Rover_2", `Cleared 3rd St Bridge. Reaching North Waterfront.`, "info");
+        addLog("Rover_2", `Cleared ${scenario.detourName}. Approaching destination gateway.`, "info");
         break;
 
       case 6:
         setRobots(prev => [
           prev[0],
-          { ...prev[1], position: POS.North_Goal, status: "ARRIVED" },
+          { ...prev[1], position: pos.goal, status: "ARRIVED" },
         ]);
-        addLog("Rover_2", `🎉 ARRIVED at ${scenario.hubGoalLabel}! Delivery complete with ~${scenario.delayAvoided} saved.`, "info");
+        addLog("Rover_2", `🎉 ARRIVED at ${scenario.hubGoalLabel}! Transit completed with ~${scenario.delayAvoided} saved.`, "info");
         setIsRunning(false);
         break;
 

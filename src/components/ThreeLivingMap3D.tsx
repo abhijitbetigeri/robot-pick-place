@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Robot, Bridge, ScenarioDef } from '../types';
-import { Camera, Eye, Video, Compass, AlertTriangle, CheckCircle2, Maximize2 } from 'lucide-react';
+import { Camera, Eye, Video, Compass, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 interface ThreeLivingMap3DProps {
   robots: Robot[];
@@ -25,43 +25,37 @@ export const ThreeLivingMap3D: React.FC<ThreeLivingMap3DProps> = ({
   const rover1 = robots.find(r => r.robotId === "Rover_1");
   const rover2 = robots.find(r => r.robotId === "Rover_2");
 
-  // Three.js scene refs
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
 
-  // Dynamic mesh refs
   const rover1MeshRef = useRef<THREE.Group | null>(null);
   const rover2MeshRef = useRef<THREE.Group | null>(null);
   const bridgeAlphaDeckRef = useRef<THREE.Group | null>(null);
   const pathRibbonRef = useRef<THREE.Line | null>(null);
   const waterMeshRef = useRef<THREE.Mesh | null>(null);
-  const barrierMeshRef = useRef<THREE.Group | null>(null);
+  const obstacleGroupRef = useRef<THREE.Group | null>(null);
 
-  // Interaction controls state
   const isDraggingRef = useRef(false);
   const prevMousePosRef = useRef({ x: 0, y: 0 });
-  const orbitAnglesRef = useRef({ theta: 0.785, phi: 0.85, radius: 100 }); // Spherical angles
+  const orbitAnglesRef = useRef({ theta: 0.785, phi: 0.85, radius: 105 });
 
-  // Initialize Three.js scene
+  // Re-build 3D environment when scenario changes
   useEffect(() => {
     if (!containerRef.current) return;
 
     const width = containerRef.current.clientWidth;
     const height = containerRef.current.clientHeight;
 
-    // 1. Scene
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x070b14);
     scene.fog = new THREE.FogExp2(0x070b14, 0.007);
     sceneRef.current = scene;
 
-    // 2. Camera
     const camera = new THREE.PerspectiveCamera(45, width / height, 1, 500);
     cameraRef.current = camera;
     updateCameraPosition();
 
-    // 3. Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -69,347 +63,347 @@ export const ThreeLivingMap3D: React.FC<ThreeLivingMap3DProps> = ({
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     rendererRef.current = renderer;
 
-    // Clean old canvas if any
     containerRef.current.innerHTML = "";
     containerRef.current.appendChild(renderer.domElement);
 
-    // 4. Lighting
-    const ambientLight = new THREE.AmbientLight(0xdbeafe, 0.65);
+    // Common Lighting
+    const ambientLight = new THREE.AmbientLight(0xdbeafe, 0.7);
     scene.add(ambientLight);
 
-    const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    sunLight.position.set(40, 70, 30);
+    const sunLight = new THREE.DirectionalLight(0xffffff, 1.25);
+    sunLight.position.set(40, 75, 30);
     sunLight.castShadow = true;
     sunLight.shadow.mapSize.width = 2048;
     sunLight.shadow.mapSize.height = 2048;
-    sunLight.shadow.camera.near = 10;
-    sunLight.shadow.camera.far = 200;
-    sunLight.shadow.camera.left = -60;
-    sunLight.shadow.camera.right = 60;
-    sunLight.shadow.camera.top = 60;
-    sunLight.shadow.camera.bottom = -60;
     scene.add(sunLight);
 
-    // Cyan and blue atmospheric point lights
-    const bluePoint = new THREE.PointLight(0x00f0ff, 1.5, 80);
-    bluePoint.position.set(-20, 15, 0);
-    scene.add(bluePoint);
+    const pos = scenario.positions;
 
-    const goldPoint = new THREE.PointLight(0xf59e0b, 1.5, 80);
-    goldPoint.position.set(25, 15, 0);
-    scene.add(goldPoint);
+    // ================= BUILD SCENARIO-SPECIFIC 3D WORLD =================
+    if (scenario.environmentType === "waterway_bridges") {
+      // -------------------------------------------------------------
+      // 1. SF MISSION CREEK CANAL & TWIN PARALLEL BRIDGES
+      // -------------------------------------------------------------
+      // South Bank & North Bank
+      const bankMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.85 });
+      const southBank = new THREE.Mesh(new THREE.BoxGeometry(140, 4, 60), bankMat);
+      southBank.position.set(0, -2, -35);
+      southBank.receiveShadow = true;
+      scene.add(southBank);
 
-    // ================= TERRAIN & WATER =================
-    // South Bank Ground
-    const southGroundGeo = new THREE.BoxGeometry(140, 4, 60);
-    const groundMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.85, metalness: 0.1 });
-    const southGround = new THREE.Mesh(southGroundGeo, groundMat);
-    southGround.position.set(0, -2, -35);
-    southGround.receiveShadow = true;
-    scene.add(southGround);
+      const northBank = new THREE.Mesh(new THREE.BoxGeometry(140, 4, 60), bankMat);
+      northBank.position.set(0, -2, 35);
+      northBank.receiveShadow = true;
+      scene.add(northBank);
 
-    // North Bank Ground
-    const northGround = new THREE.Mesh(southGroundGeo, groundMat);
-    northGround.position.set(0, -2, 35);
-    northGround.receiveShadow = true;
-    scene.add(northGround);
+      // Water Canal
+      const waterGeo = new THREE.PlaneGeometry(140, 24, 64, 64);
+      const waterMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.1, metalness: 0.85, transparent: true, opacity: 0.88 });
+      const waterMesh = new THREE.Mesh(waterGeo, waterMat);
+      waterMesh.rotation.x = -Math.PI / 2;
+      waterMesh.position.set(0, -1.8, 0);
+      scene.add(waterMesh);
+      waterMeshRef.current = waterMesh;
 
-    // Shoreline retaining concrete walls
-    const wallGeo = new THREE.BoxGeometry(140, 5, 2);
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 });
-    const southWall = new THREE.Mesh(wallGeo, wallMat);
-    southWall.position.set(0, -0.5, -5.5);
-    southWall.castShadow = true;
-    scene.add(southWall);
+      // Asphalt roads
+      const asphaltMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 });
+      const r1 = new THREE.Mesh(new THREE.BoxGeometry(10, 0.2, 50), asphaltMat);
+      r1.position.set(0, 0.1, -30);
+      scene.add(r1);
 
-    const northWall = new THREE.Mesh(wallGeo, wallMat);
-    northWall.position.set(0, -0.5, 5.5);
-    northWall.castShadow = true;
-    scene.add(northWall);
+      const rCrossS = new THREE.Mesh(new THREE.BoxGeometry(70, 0.2, 10), asphaltMat);
+      rCrossS.position.set(2, 0.1, -12);
+      scene.add(rCrossS);
 
-    // Water Canal Mesh (Animated)
-    const waterGeo = new THREE.PlaneGeometry(140, 24, 64, 64);
-    const waterMat = new THREE.MeshStandardMaterial({
-      color: 0x0284c7,
-      roughness: 0.1,
-      metalness: 0.85,
-      transparent: true,
-      opacity: 0.88,
-    });
-    const waterMesh = new THREE.Mesh(waterGeo, waterMat);
-    waterMesh.rotation.x = -Math.PI / 2;
-    waterMesh.position.set(0, -1.8, 0);
-    waterMesh.receiveShadow = true;
-    scene.add(waterMesh);
-    waterMeshRef.current = waterMesh;
+      const rCrossN = new THREE.Mesh(new THREE.BoxGeometry(70, 0.2, 10), asphaltMat);
+      rCrossN.position.set(2, 0.1, 26);
+      scene.add(rCrossN);
 
-    // Road Networks on Banks
-    const asphaltMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 });
-    
-    // South road spine
-    const southRoadGeo = new THREE.BoxGeometry(10, 0.2, 50);
-    const southRoad = new THREE.Mesh(southRoadGeo, asphaltMat);
-    southRoad.position.set(0, 0.1, -30);
-    southRoad.receiveShadow = true;
-    scene.add(southRoad);
+      // --- BRIDGE 1: 4TH STREET BRIDGE (WEST / ALPHA) ---
+      const bAlphaGrp = new THREE.Group();
+      bAlphaGrp.position.set(-18, 0, 0);
+      scene.add(bAlphaGrp);
 
-    // South connector crossroad
-    const southCrossGeo = new THREE.BoxGeometry(70, 0.2, 10);
-    const southCross = new THREE.Mesh(southCrossGeo, asphaltMat);
-    southCross.position.set(3, 0.1, -10);
-    southCross.receiveShadow = true;
-    scene.add(southCross);
+      const pierGeo = new THREE.BoxGeometry(14, 6, 4);
+      const pierMat = new THREE.MeshStandardMaterial({ color: 0x334155 });
+      const pS = new THREE.Mesh(pierGeo, pierMat); pS.position.set(0, -2, -6); bAlphaGrp.add(pS);
+      const pN = new THREE.Mesh(pierGeo, pierMat); pN.position.set(0, -2, 6); bAlphaGrp.add(pN);
 
-    // North connector crossroad & spine
-    const northCross = new THREE.Mesh(southCrossGeo, asphaltMat);
-    northCross.position.set(3, 0.1, 26);
-    northCross.receiveShadow = true;
-    scene.add(northCross);
+      const alphaDeckGrp = new THREE.Group();
+      alphaDeckGrp.position.set(0, 0.2, -6);
+      bAlphaGrp.add(alphaDeckGrp);
+      bridgeAlphaDeckRef.current = alphaDeckGrp;
 
-    const northRoad = new THREE.Mesh(southRoadGeo, asphaltMat);
-    northRoad.position.set(0, 0.1, 40);
-    northRoad.receiveShadow = true;
-    scene.add(northRoad);
+      const alphaDeck = new THREE.Mesh(new THREE.BoxGeometry(10, 0.6, 20), asphaltMat);
+      alphaDeck.position.set(0, 0, 10);
+      alphaDeck.castShadow = true;
+      alphaDeckGrp.add(alphaDeck);
 
-    // ================= BRIDGE 1: 4TH STREET BRIDGE (WEST / ALPHA) =================
-    const bridgeAlphaGroup = new THREE.Group();
-    bridgeAlphaGroup.position.set(-18, 0, 0);
-    scene.add(bridgeAlphaGroup);
+      const trussMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.6 });
+      const tL = new THREE.Mesh(new THREE.BoxGeometry(0.8, 5, 20), trussMat);
+      tL.position.set(-4.6, 2.5, 10); alphaDeckGrp.add(tL);
+      const tR = new THREE.Mesh(new THREE.BoxGeometry(0.8, 5, 20), trussMat);
+      tR.position.set(4.6, 2.5, 10); alphaDeckGrp.add(tR);
 
-    // Bridge Piers (Concrete)
-    const pierGeo = new THREE.BoxGeometry(14, 6, 4);
-    const pierMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.9 });
-    const pierSouth = new THREE.Mesh(pierGeo, pierMat);
-    pierSouth.position.set(0, -2, -6);
-    bridgeAlphaGroup.add(pierSouth);
+      // --- BRIDGE 2: 3RD STREET BRIDGE (EAST / BETA) ---
+      const bBetaGrp = new THREE.Group();
+      bBetaGrp.position.set(22, 0, 0);
+      scene.add(bBetaGrp);
 
-    const pierNorth = new THREE.Mesh(pierGeo, pierMat);
-    pierNorth.position.set(0, -2, 6);
-    bridgeAlphaGroup.add(pierNorth);
+      const betaDeck = new THREE.Mesh(new THREE.BoxGeometry(10, 0.6, 24), asphaltMat);
+      betaDeck.position.set(0, 0.2, 0);
+      betaDeck.castShadow = true;
+      bBetaGrp.add(betaDeck);
 
-    // Bascule Pivot & Deck Group (Lifts when blocked!)
-    const alphaDeckGroup = new THREE.Group();
-    alphaDeckGroup.position.set(0, 0.2, -6); // Pivot at south pier
-    bridgeAlphaGroup.add(alphaDeckGroup);
-    bridgeAlphaDeckRef.current = alphaDeckGroup;
+      const bPierS = new THREE.Mesh(pierGeo, pierMat); bPierS.position.set(0, -2, -8); bBetaGrp.add(bPierS);
+      const bPierN = new THREE.Mesh(pierGeo, pierMat); bPierN.position.set(0, -2, 8); bBetaGrp.add(bPierN);
 
-    // Deck Surface
-    const deckGeo = new THREE.BoxGeometry(10, 0.6, 20);
-    const deckMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 });
-    const alphaDeck = new THREE.Mesh(deckGeo, deckMat);
-    alphaDeck.position.set(0, 0, 10); // Offset from south pivot
-    alphaDeck.castShadow = true;
-    alphaDeck.receiveShadow = true;
-    alphaDeckGroup.add(alphaDeck);
+      const betaTrussMat = new THREE.MeshStandardMaterial({ color: 0x00f0ff, metalness: 0.7 });
+      const btL = new THREE.Mesh(new THREE.BoxGeometry(0.8, 6.5, 24), betaTrussMat);
+      btL.position.set(-4.6, 3.2, 0); bBetaGrp.add(btL);
+      const btR = new THREE.Mesh(new THREE.BoxGeometry(0.8, 6.5, 24), betaTrussMat);
+      btR.position.set(4.6, 3.2, 0); bBetaGrp.add(btR);
 
-    // Steel Trusses on 4th St Bridge (Left & Right arches)
-    const trussMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.6, roughness: 0.3 });
-    const trussGeo = new THREE.BoxGeometry(0.8, 5, 20);
-    
-    const trussLeft = new THREE.Mesh(trussGeo, trussMat);
-    trussLeft.position.set(-4.6, 2.5, 10);
-    alphaDeckGroup.add(trussLeft);
+      // Barrier Mesh
+      const barrierGrp = new THREE.Group();
+      barrierGrp.position.set(-18, 0.5, -8);
+      const bArm = new THREE.Mesh(new THREE.BoxGeometry(9, 0.4, 0.2), new THREE.MeshStandardMaterial({ color: 0xf43f5e }));
+      bArm.position.set(0, 1.4, 0); barrierGrp.add(bArm);
+      scene.add(barrierGrp);
+      obstacleGroupRef.current = barrierGrp;
 
-    const trussRight = new THREE.Mesh(trussGeo, trussMat);
-    trussRight.position.set(4.6, 2.5, 10);
-    alphaDeckGroup.add(trussRight);
+    } else if (scenario.environmentType === "urban_grid") {
+      // -------------------------------------------------------------
+      // 2. NYC SOHO URBAN GRID (MANHATTAN ALLEYWAYS & CAST-IRON BUILDINGS)
+      // -------------------------------------------------------------
+      bridgeAlphaDeckRef.current = null;
+      waterMeshRef.current = null;
 
-    // Yellow Center Stripe
-    const stripeGeo = new THREE.BoxGeometry(0.3, 0.05, 18);
-    const stripeMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
-    const alphaStripe = new THREE.Mesh(stripeGeo, stripeMat);
-    alphaStripe.position.set(0, 0.35, 10);
-    alphaDeckGroup.add(alphaStripe);
+      // Solid Manhattan Ground
+      const groundMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 });
+      const cityGround = new THREE.Mesh(new THREE.PlaneGeometry(160, 160), groundMat);
+      cityGround.rotation.x = -Math.PI / 2;
+      cityGround.receiveShadow = true;
+      scene.add(cityGround);
 
-    // Barrier barricade (spawns when blocked)
-    const barrierGroup = new THREE.Group();
-    barrierGroup.position.set(-18, 0.5, -8);
-    
-    const barPostGeo = new THREE.CylinderGeometry(0.3, 0.3, 2);
-    const postMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e });
-    const postL = new THREE.Mesh(barPostGeo, postMat);
-    postL.position.set(-4, 1, 0);
-    barrierGroup.add(postL);
-    const postR = new THREE.Mesh(barPostGeo, postMat);
-    postR.position.set(4, 1, 0);
-    barrierGroup.add(postR);
+      const asphaltMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.85 });
+      const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.7 });
 
-    const barArmGeo = new THREE.BoxGeometry(9, 0.4, 0.2);
-    const armMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
-    const barArm = new THREE.Mesh(barArmGeo, armMat);
-    barArm.position.set(0, 1.4, 0);
-    barrierGroup.add(barArm);
+      // Primary Narrow Alleyway (Mercer St - X = 0)
+      const alleyRoad = new THREE.Mesh(new THREE.BoxGeometry(8, 0.15, 80), asphaltMat);
+      alleyRoad.position.set(0, 0.08, 0);
+      scene.add(alleyRoad);
 
-    // Hazard light
-    const hazLightGeo = new THREE.SphereGeometry(0.5, 16, 16);
-    const hazLightMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e });
-    const hazLight = new THREE.Mesh(hazLightGeo, hazLightMat);
-    hazLight.position.set(0, 2.2, 0);
-    barrierGroup.add(hazLight);
+      // Detour Wide Avenue (Broadway - X = 26)
+      const broadwayRoad = new THREE.Mesh(new THREE.BoxGeometry(16, 0.15, 80), asphaltMat);
+      broadwayRoad.position.set(26, 0.08, 0);
+      scene.add(broadwayRoad);
 
-    scene.add(barrierGroup);
-    barrierMeshRef.current = barrierGroup;
+      // Crosstown connector streets (Prince St Z = -16, Spring St Z = 28)
+      const princeSt = new THREE.Mesh(new THREE.BoxGeometry(70, 0.15, 12), asphaltMat);
+      princeSt.position.set(13, 0.08, -16);
+      scene.add(princeSt);
 
-    // ================= BRIDGE 2: 3RD STREET BRIDGE (EAST / BETA DETOUR) =================
-    const bridgeBetaGroup = new THREE.Group();
-    bridgeBetaGroup.position.set(22, 0, 0);
-    scene.add(bridgeBetaGroup);
+      const springSt = new THREE.Mesh(new THREE.BoxGeometry(70, 0.15, 12), asphaltMat);
+      springSt.position.set(13, 0.08, 28);
+      scene.add(springSt);
 
-    // Beta Bridge Deck (Full 24m Span)
-    const betaDeckGeo = new THREE.BoxGeometry(10, 0.6, 24);
-    const betaDeckMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 });
-    const betaDeck = new THREE.Mesh(betaDeckGeo, betaDeckMat);
-    betaDeck.position.set(0, 0.2, 0);
-    betaDeck.castShadow = true;
-    betaDeck.receiveShadow = true;
-    bridgeBetaGroup.add(betaDeck);
+      // Historic Cast-Iron Brick Facades lining Mercer Alley
+      const brickMat1 = new THREE.MeshStandardMaterial({ color: 0x7c2d12, roughness: 0.8 }); // Red brick
+      const brickMat2 = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.6 }); // Cast iron dark
+      const brickMat3 = new THREE.MeshStandardMaterial({ color: 0x854d0e, roughness: 0.9 }); // Brownstone
 
-    // Beta Piers
-    const betaPierS = new THREE.Mesh(pierGeo, pierMat);
-    betaPierS.position.set(0, -2, -8);
-    bridgeBetaGroup.add(betaPierS);
-    const betaPierN = new THREE.Mesh(pierGeo, pierMat);
-    betaPierN.position.set(0, -2, 8);
-    bridgeBetaGroup.add(betaPierN);
+      const addBuilding = (x: number, z: number, w: number, h: number, d: number, mat: THREE.Material) => {
+        const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+        b.position.set(x, h / 2, z);
+        b.castShadow = true;
+        b.receiveShadow = true;
+        scene.add(b);
+      };
 
-    // Distinct Scherzer Rolling Arch Truss (Emerald/Cyan Steel)
-    const betaTrussMat = new THREE.MeshStandardMaterial({ color: 0x00f0ff, metalness: 0.7, roughness: 0.2 });
-    const betaTrussGeo = new THREE.BoxGeometry(0.8, 6.5, 24);
-    const betaTrussL = new THREE.Mesh(betaTrussGeo, betaTrussMat);
-    betaTrussL.position.set(-4.6, 3.2, 0);
-    bridgeBetaGroup.add(betaTrussL);
+      // West side of Mercer Alley
+      addBuilding(-18, -35, 24, 28, 24, brickMat1);
+      addBuilding(-18, 5, 24, 32, 40, brickMat2);
+      addBuilding(-18, 42, 24, 26, 24, brickMat3);
 
-    const betaTrussR = new THREE.Mesh(betaTrussGeo, betaTrussMat);
-    betaTrussR.position.set(4.6, 3.2, 0);
-    bridgeBetaGroup.add(betaTrussR);
+      // Block between Mercer St and Broadway
+      addBuilding(13, 5, 14, 30, 40, brickMat1);
+      addBuilding(13, -35, 14, 24, 24, brickMat3);
+      addBuilding(13, 42, 14, 28, 24, brickMat2);
 
-    const betaStripe = new THREE.Mesh(stripeGeo, stripeMat);
-    betaStripe.position.set(0, 0.55, 0);
-    bridgeBetaGroup.add(betaStripe);
+      // East side of Broadway
+      addBuilding(46, 5, 20, 36, 40, brickMat2);
+      addBuilding(46, -35, 20, 30, 24, brickMat1);
+      addBuilding(46, 42, 20, 32, 24, brickMat3);
 
-    // Green status beacons on 3rd St Bridge
-    const beaconGeo = new THREE.SphereGeometry(0.4, 16, 16);
-    const beaconMat = new THREE.MeshBasicMaterial({ color: 0x10b981 });
-    const beaconS = new THREE.Mesh(beaconGeo, beaconMat);
-    beaconS.position.set(0, 6.5, -10);
-    bridgeBetaGroup.add(beaconS);
-    const beaconN = new THREE.Mesh(beaconGeo, beaconMat);
-    beaconN.position.set(0, 6.5, 10);
-    bridgeBetaGroup.add(beaconN);
+      // Utility Trench Obstacle in Mercer Alley
+      const trenchGrp = new THREE.Group();
+      trenchGrp.position.set(0, 0.2, 0);
 
-    // ================= SURROUNDING SCENERY (BUILDINGS / WAREHOUSES) =================
-    const bldgMat1 = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
-    const bldgMat2 = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 });
-    const bldgMat3 = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.7 });
+      // Dig Hole (Black recessed box)
+      const hole = new THREE.Mesh(new THREE.BoxGeometry(7.2, 0.6, 6), new THREE.MeshBasicMaterial({ color: 0x050505 }));
+      hole.position.set(0, -0.2, 0); trenchGrp.add(hole);
 
-    const createBldg = (x: number, z: number, w: number, h: number, d: number, mat: THREE.Material) => {
-      const geo = new THREE.BoxGeometry(w, h, d);
-      const m = new THREE.Mesh(geo, mat);
-      m.position.set(x, h / 2, z);
-      m.castShadow = true;
-      m.receiveShadow = true;
-      scene.add(m);
-    };
+      // Dirt mound
+      const dirt = new THREE.Mesh(new THREE.ConeGeometry(2.5, 1.4, 8), new THREE.MeshStandardMaterial({ color: 0x573010, roughness: 0.95 }));
+      dirt.position.set(2, 0.7, -1); trenchGrp.add(dirt);
 
-    // South bank buildings
-    createBldg(-45, -35, 20, 18, 25, bldgMat1);
-    createBldg(45, -35, 22, 14, 25, bldgMat2);
+      // Safety Cones
+      const coneMat = new THREE.MeshStandardMaterial({ color: 0xf97316 });
+      [-3, -1, 1, 3].forEach((cx) => {
+        const cone = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.2, 8), coneMat);
+        cone.position.set(cx, 0.6, -3.5); trenchGrp.add(cone);
+      });
 
-    // North bank waterfront buildings (Oracle Park side)
-    createBldg(-45, 35, 24, 22, 25, bldgMat3);
-    createBldg(45, 35, 26, 28, 25, bldgMat1);
+      scene.add(trenchGrp);
+      obstacleGroupRef.current = trenchGrp;
+
+    } else if (scenario.environmentType === "port_depot") {
+      // -------------------------------------------------------------
+      // 3. AUTOMATED PORT CONTAINER TERMINAL (HEAVY AGV FREIGHT DEPOT)
+      // -------------------------------------------------------------
+      bridgeAlphaDeckRef.current = null;
+      waterMeshRef.current = null;
+
+      // Industrial Concrete Apron Ground
+      const portGround = new THREE.Mesh(
+        new THREE.PlaneGeometry(160, 160),
+        new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.95 })
+      );
+      portGround.rotation.x = -Math.PI / 2;
+      portGround.receiveShadow = true;
+      scene.add(portGround);
+
+      // Heavy AGV guide lanes
+      const laneMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 });
+      const laneAlpha = new THREE.Mesh(new THREE.BoxGeometry(10, 0.1, 80), laneMat);
+      laneAlpha.position.set(-15, 0.05, 0); scene.add(laneAlpha);
+
+      const laneBeta = new THREE.Mesh(new THREE.BoxGeometry(12, 0.1, 80), laneMat);
+      laneBeta.position.set(18, 0.05, 0); scene.add(laneBeta);
+
+      const crossS = new THREE.Mesh(new THREE.BoxGeometry(70, 0.1, 10), laneMat);
+      crossS.position.set(2, 0.05, -12); scene.add(crossS);
+
+      const crossN = new THREE.Mesh(new THREE.BoxGeometry(70, 0.1, 10), laneMat);
+      crossN.position.set(2, 0.05, 26); scene.add(crossN);
+
+      // Container Stack Builder (ISO 40ft containers: 3.5w x 3.5h x 12d)
+      const containerColors = [0x0284c7, 0xdc2626, 0x16a34a, 0xeab308, 0x9333ea]; // Blue, Red, Green, Yellow, Purple
+
+      const addContainerStack = (x: number, z: number, tiers: number, rows: number) => {
+        for (let r = 0; r < rows; r++) {
+          for (let t = 0; t < tiers; t++) {
+            const col = containerColors[(t + r + Math.abs(x)) % containerColors.length];
+            const cMat = new THREE.MeshStandardMaterial({ color: col, metalness: 0.4, roughness: 0.5 });
+            const c = new THREE.Mesh(new THREE.BoxGeometry(3.6, 3.2, 12), cMat);
+            c.position.set(x + r * 3.8, t * 3.2 + 1.6, z);
+            c.castShadow = true;
+            c.receiveShadow = true;
+            scene.add(c);
+          }
+        }
+      };
+
+      // West Yard Stacks
+      addContainerStack(-38, -25, 4, 3);
+      addContainerStack(-38, 15, 4, 3);
+
+      // Central Stacks between Bay Alpha and Bay Beta
+      addContainerStack(1, -25, 3, 2);
+      addContainerStack(1, 15, 4, 2);
+
+      // East Yard Stacks
+      addContainerStack(38, -25, 4, 3);
+      addContainerStack(38, 15, 4, 3);
+
+      // Gantry Crane overhead steel portals
+      const craneMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.7, roughness: 0.3 });
+      const addGantry = (z: number) => {
+        const beam = new THREE.Mesh(new THREE.BoxGeometry(40, 2, 2), craneMat);
+        beam.position.set(-15, 20, z); scene.add(beam);
+        const legL = new THREE.Mesh(new THREE.BoxGeometry(2, 20, 2), craneMat);
+        legL.position.set(-34, 10, z); scene.add(legL);
+        const legR = new THREE.Mesh(new THREE.BoxGeometry(2, 20, 2), craneMat);
+        legR.position.set(4, 10, z); scene.add(legR);
+      };
+      addGantry(-15);
+      addGantry(15);
+
+      // Fallen / Spilled Shipping Container in Bay Alpha
+      const spillGrp = new THREE.Group();
+      spillGrp.position.set(-15, 0.2, 4);
+
+      const tippedBox = new THREE.Mesh(
+        new THREE.BoxGeometry(3.6, 3.2, 12),
+        new THREE.MeshStandardMaterial({ color: 0xdc2626, metalness: 0.5, roughness: 0.4 })
+      );
+      tippedBox.position.set(0, 1.8, 0);
+      tippedBox.rotation.z = -0.55; // Tilted across lane
+      tippedBox.rotation.y = 0.4;
+      tippedBox.castShadow = true;
+      spillGrp.add(tippedBox);
+
+      // Hazard beacon
+      const hLight = new THREE.Mesh(new THREE.SphereGeometry(0.6, 16, 16), new THREE.MeshBasicMaterial({ color: 0xf43f5e }));
+      hLight.position.set(0, 4.5, 0); spillGrp.add(hLight);
+
+      scene.add(spillGrp);
+      obstacleGroupRef.current = spillGrp;
+    }
 
     // ================= 3D ROBOT ROVERS =================
-    // Helper to create detailed 3D rover model
     const createRoverMesh = (colorHex: number, isScout: boolean) => {
       const group = new THREE.Group();
-
-      // Chassis body
-      const bodyGeo = new THREE.BoxGeometry(2.4, 1.0, 3.2);
-      const bodyMat = new THREE.MeshStandardMaterial({ color: colorHex, metalness: 0.4, roughness: 0.3 });
-      const body = new THREE.Mesh(bodyGeo, bodyMat);
+      const body = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.0, 3.2), new THREE.MeshStandardMaterial({ color: colorHex, metalness: 0.4 }));
       body.position.y = 0.8;
       body.castShadow = true;
       group.add(body);
 
-      // Top pod / payload
-      const topGeo = new THREE.BoxGeometry(1.6, 0.6, 1.8);
-      const topMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.8, roughness: 0.2 });
-      const top = new THREE.Mesh(topGeo, topMat);
+      const top = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.6, 1.8), new THREE.MeshStandardMaterial({ color: 0x0f172a }));
       top.position.set(0, 1.5, 0);
       group.add(top);
 
-      // 4 Wheels
+      // Wheels
       const wheelGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.4, 16);
-      const wheelMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.9 });
-      
-      const positions = [
-        [-1.3, 0.5, -1.0],
-        [1.3, 0.5, -1.0],
-        [-1.3, 0.5, 1.0],
-        [1.3, 0.5, 1.0],
-      ];
-      positions.forEach(([wx, wy, wz]) => {
-        const wheel = new THREE.Mesh(wheelGeo, wheelMat);
-        wheel.rotation.z = Math.PI / 2;
-        wheel.position.set(wx, wy, wz);
-        wheel.castShadow = true;
-        group.add(wheel);
+      const wheelMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+      [[-1.3, 0.5, -1], [1.3, 0.5, -1], [-1.3, 0.5, 1], [1.3, 0.5, 1]].forEach(([wx, wy, wz]) => {
+        const w = new THREE.Mesh(wheelGeo, wheelMat);
+        w.rotation.z = Math.PI / 2;
+        w.position.set(wx, wy, wz);
+        group.add(w);
       });
 
-      // Lidar / Sensor Dome
-      const lidarGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.4, 16);
-      const lidarMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.9 });
-      const lidar = new THREE.Mesh(lidarGeo, lidarMat);
-      lidar.position.set(0, 1.95, -0.4);
-      group.add(lidar);
-
-      // Active Laser Lidar Cone (Scout rover only)
+      // Lidar cone for Scout
       if (isScout) {
-        const coneGeo = new THREE.ConeGeometry(5, 12, 16, 1, true);
-        const coneMat = new THREE.MeshBasicMaterial({
-          color: 0xf59e0b,
-          transparent: true,
-          opacity: 0.18,
-          side: THREE.DoubleSide,
-        });
-        const cone = new THREE.Mesh(coneGeo, coneMat);
+        const cone = new THREE.Mesh(
+          new THREE.ConeGeometry(5, 12, 16, 1, true),
+          new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.18, side: THREE.DoubleSide })
+        );
         cone.rotation.x = -Math.PI / 2;
         cone.position.set(0, 1.2, 7);
         group.add(cone);
       }
-
-      // Headlights
-      const hlGeo = new THREE.SphereGeometry(0.15, 8, 8);
-      const hlMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-      const hl1 = new THREE.Mesh(hlGeo, hlMat);
-      hl1.position.set(-0.8, 0.8, 1.6);
-      group.add(hl1);
-      const hl2 = new THREE.Mesh(hlGeo, hlMat);
-      hl2.position.set(0.8, 0.8, 1.6);
-      group.add(hl2);
-
       return group;
     };
 
-    const r1Mesh = createRoverMesh(0xf59e0b, true); // Rover 1 (Scout Gold)
-    r1Mesh.position.set(0, 0, -30);
+    const r1Mesh = createRoverMesh(0xf59e0b, true);
+    r1Mesh.position.set(pos.start.x, 0, pos.start.y);
     scene.add(r1Mesh);
     rover1MeshRef.current = r1Mesh;
 
-    const r2Mesh = createRoverMesh(0x00f0ff, false); // Rover 2 (Delivery Cyan)
-    r2Mesh.position.set(0, 0, -35);
+    const r2Mesh = createRoverMesh(0x00f0ff, false);
+    r2Mesh.position.set(pos.start.x, 0, pos.start.y - 4);
     scene.add(r2Mesh);
     rover2MeshRef.current = r2Mesh;
 
-    // ================= DYNAMIC 3D PATH RIBBON =================
+    // 3D Path Ribbon
     const pathMat = new THREE.LineBasicMaterial({ color: 0x00f0ff, linewidth: 3 });
-    const pathGeo = new THREE.BufferGeometry();
-    const ribbon = new THREE.Line(pathGeo, pathMat);
+    const ribbon = new THREE.Line(new THREE.BufferGeometry(), pathMat);
     scene.add(ribbon);
     pathRibbonRef.current = ribbon;
 
-    // ================= ANIMATION LOOP =================
+    // Animation Loop
     let animationFrameId: number;
     let clock = new THREE.Clock();
 
@@ -417,36 +411,32 @@ export const ThreeLivingMap3D: React.FC<ThreeLivingMap3DProps> = ({
       animationFrameId = requestAnimationFrame(animate);
       const elapsedTime = clock.getElapsedTime();
 
-      // 1. Water shimmer wave animation
+      // Water animation if present
       if (waterMeshRef.current) {
-        const pos = waterMeshRef.current.geometry.attributes.position;
-        for (let i = 0; i < pos.count; i++) {
-          const u = pos.getX(i);
-          const v = pos.getY(i);
-          pos.setZ(i, Math.sin(u * 0.15 + elapsedTime * 2) * 0.25 + Math.cos(v * 0.2 + elapsedTime * 1.5) * 0.2);
+        const p = waterMeshRef.current.geometry.attributes.position;
+        for (let i = 0; i < p.count; i++) {
+          const u = p.getX(i);
+          const v = p.getY(i);
+          p.setZ(i, Math.sin(u * 0.15 + elapsedTime * 2) * 0.25 + Math.cos(v * 0.2 + elapsedTime * 1.5) * 0.2);
         }
-        pos.needsUpdate = true;
+        p.needsUpdate = true;
       }
 
-      // 2. Drawbridge bascule arm animation
+      // Bascule lift if present
       if (bridgeAlphaDeckRef.current) {
-        const targetRot = alphaBlocked ? -0.85 : 0.0; // Lift ~50 degrees
-        bridgeAlphaDeckRef.current.rotation.x = THREE.MathUtils.lerp(
-          bridgeAlphaDeckRef.current.rotation.x,
-          targetRot,
-          0.05
-        );
+        const targetRot = alphaBlocked ? -0.85 : 0.0;
+        bridgeAlphaDeckRef.current.rotation.x = THREE.MathUtils.lerp(bridgeAlphaDeckRef.current.rotation.x, targetRot, 0.05);
       }
 
-      // 3. Barrier visibility & pulse
-      if (barrierMeshRef.current) {
-        barrierMeshRef.current.visible = alphaBlocked;
+      // Obstacle hazard visibility
+      if (obstacleGroupRef.current) {
+        obstacleGroupRef.current.visible = alphaBlocked;
       }
 
-      // 4. Update Rover 1 & Rover 2 Positions in 3D
+      // Rover 1 and 2 positions in 3D
       if (rover1MeshRef.current && rover1) {
         rover1MeshRef.current.position.x = THREE.MathUtils.lerp(rover1MeshRef.current.position.x, rover1.position.x, 0.1);
-        rover1MeshRef.current.position.z = THREE.MathUtils.lerp(rover1MeshRef.current.position.z, rover1.position.y, 0.1); // Map Y to Z
+        rover1MeshRef.current.position.z = THREE.MathUtils.lerp(rover1MeshRef.current.position.z, rover1.position.y, 0.1);
       }
 
       if (rover2MeshRef.current && rover2) {
@@ -454,45 +444,42 @@ export const ThreeLivingMap3D: React.FC<ThreeLivingMap3DProps> = ({
         rover2MeshRef.current.position.z = THREE.MathUtils.lerp(rover2MeshRef.current.position.z, rover2.position.y, 0.1);
       }
 
-      // 5. Update Dynamic 3D Path Ribbon
+      // Dynamic Path Ribbon
       if (pathRibbonRef.current && rover2) {
-        let points: THREE.Vector3[] = [];
-        const r2Pos = rover2MeshRef.current ? rover2MeshRef.current.position : new THREE.Vector3(0, 0, -35);
+        let pts: THREE.Vector3[] = [];
+        const r2Pos = rover2MeshRef.current ? rover2MeshRef.current.position : new THREE.Vector3(pos.start.x, 0.4, pos.start.y);
 
         if (rover2.activeRoute === "VIA_BRIDGE_BETA") {
-          // Detour snapped to Bridge Beta (3rd St)
-          points = [
+          pts = [
             new THREE.Vector3(r2Pos.x, 0.4, r2Pos.z),
-            new THREE.Vector3(0, 0.4, -10),
-            new THREE.Vector3(22, 0.4, -10),
-            new THREE.Vector3(22, 0.4, 0),
-            new THREE.Vector3(22, 0.4, 24),
-            new THREE.Vector3(0, 0.4, 28),
-            new THREE.Vector3(0, 0.4, 38),
+            new THREE.Vector3(pos.fork.x, 0.4, pos.fork.y),
+            new THREE.Vector3(pos.detourApproach.x, 0.4, pos.detourApproach.y),
+            new THREE.Vector3(pos.detourEntry.x, 0.4, pos.detourEntry.y),
+            new THREE.Vector3(pos.detourMid.x, 0.4, pos.detourMid.y),
+            new THREE.Vector3(pos.detourExit.x, 0.4, pos.detourExit.y),
+            new THREE.Vector3(pos.northApproach.x, 0.4, pos.northApproach.y),
+            new THREE.Vector3(pos.goal.x, 0.4, pos.goal.y),
           ];
         } else {
-          // Primary Path along Bridge Alpha (4th St)
-          points = [
+          pts = [
             new THREE.Vector3(r2Pos.x, 0.4, r2Pos.z),
-            new THREE.Vector3(0, 0.4, -10),
-            new THREE.Vector3(-18, 0.4, 0),
-            new THREE.Vector3(-18, 0.4, 24),
-            new THREE.Vector3(0, 0.4, 28),
-            new THREE.Vector3(0, 0.4, 38),
+            new THREE.Vector3(pos.fork.x, 0.4, pos.fork.y),
+            new THREE.Vector3(pos.primaryEntry.x, 0.4, pos.primaryEntry.y),
+            new THREE.Vector3(pos.primaryMid.x, 0.4, pos.primaryMid.y),
+            new THREE.Vector3(pos.primaryExit.x, 0.4, pos.primaryExit.y),
+            new THREE.Vector3(pos.northApproach.x, 0.4, pos.northApproach.y),
+            new THREE.Vector3(pos.goal.x, 0.4, pos.goal.y),
           ];
         }
-        pathRibbonRef.current.geometry.setFromPoints(points);
+        pathRibbonRef.current.geometry.setFromPoints(pts);
       }
 
-      // 6. Camera Tracking
       updateCameraPosition();
-
       renderer.render(scene, camera);
     };
 
     animate();
 
-    // Resize Handler
     const handleResize = () => {
       if (!containerRef.current || !rendererRef.current || !cameraRef.current) return;
       const w = containerRef.current.clientWidth;
@@ -509,25 +496,23 @@ export const ThreeLivingMap3D: React.FC<ThreeLivingMap3DProps> = ({
       cancelAnimationFrame(animationFrameId);
       renderer.dispose();
     };
-  }, []);
+  }, [scenario.id]);
 
-  // Update Camera based on Mode or Mouse Drag
   const updateCameraPosition = () => {
     if (!cameraRef.current) return;
 
     if (cameraMode === "rover1" && rover1MeshRef.current) {
-      const pos = rover1MeshRef.current.position;
-      cameraRef.current.position.set(pos.x, pos.y + 12, pos.z - 18);
-      cameraRef.current.lookAt(pos.x, pos.y + 2, pos.z + 20);
+      const p = rover1MeshRef.current.position;
+      cameraRef.current.position.set(p.x, p.y + 12, p.z - 18);
+      cameraRef.current.lookAt(p.x, p.y + 2, p.z + 20);
     } else if (cameraMode === "rover2" && rover2MeshRef.current) {
-      const pos = rover2MeshRef.current.position;
-      cameraRef.current.position.set(pos.x, pos.y + 12, pos.z - 18);
-      cameraRef.current.lookAt(pos.x, pos.y + 2, pos.z + 20);
+      const p = rover2MeshRef.current.position;
+      cameraRef.current.position.set(p.x, p.y + 12, p.z - 18);
+      cameraRef.current.lookAt(p.x, p.y + 2, p.z + 20);
     } else if (cameraMode === "topdown") {
       cameraRef.current.position.set(0, 110, 0);
       cameraRef.current.lookAt(0, 0, 0);
     } else {
-      // Isometric Orbit
       const { theta, phi, radius } = orbitAnglesRef.current;
       const x = radius * Math.sin(phi) * Math.sin(theta);
       const y = radius * Math.cos(phi);
@@ -537,7 +522,6 @@ export const ThreeLivingMap3D: React.FC<ThreeLivingMap3DProps> = ({
     }
   };
 
-  // Mouse Orbit Drag Handlers
   const handleMouseDown = (e: React.MouseEvent) => {
     if (cameraMode !== "isometric") return;
     isDraggingRef.current = true;
@@ -578,11 +562,11 @@ export const ThreeLivingMap3D: React.FC<ThreeLivingMap3DProps> = ({
             <h2 className="text-base font-bold text-white flex items-center gap-2">
               {scenario.title} — 3D Photorealistic Digital Twin
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 uppercase">
-                WebGL PhysX 3D Frame
+                {scenario.environmentType.replace('_', ' ')}
               </span>
             </h2>
             <p className="text-xs text-slate-400">
-              Parallel Twin Bridges: 4th St (West Bascule) & 3rd St (East Scherzer Lift)
+              {scenario.subtitle}
             </p>
           </div>
         </div>
@@ -638,14 +622,14 @@ export const ThreeLivingMap3D: React.FC<ThreeLivingMap3DProps> = ({
       >
         <div ref={containerRef} className="w-full h-full" />
 
-        {/* Floating 3D Bridge Callout Badges */}
+        {/* Floating Callout Badges */}
         <div className="absolute top-4 left-4 bg-slate-950/85 border border-slate-800/80 rounded-lg p-2.5 text-[11px] font-mono shadow-xl backdrop-blur-md pointer-events-none">
           <div className="flex items-center gap-1.5 mb-1">
             <span className={`w-2.5 h-2.5 rounded-full ${alphaBlocked ? "bg-rose-500 animate-ping" : "bg-emerald-400"}`} />
             <span className="text-white font-bold">{scenario.primaryName}</span>
           </div>
           <div className="text-slate-400 text-[10px]">
-            {alphaBlocked ? "⛔ DRAWBRIDGE LIFTED (50° Bascule Angle)" : "🟢 CLEAR (88m Primary Route)"}
+            {alphaBlocked ? `⛔ ${scenario.incidentTitle}` : `🟢 CLEAR (${scenario.primaryDistance} Primary Route)`}
           </div>
         </div>
 
@@ -655,11 +639,10 @@ export const ThreeLivingMap3D: React.FC<ThreeLivingMap3DProps> = ({
             <span className="text-white font-bold">{scenario.detourName}</span>
           </div>
           <div className="text-slate-400 text-[10px]">
-            🟢 DETOUR CLEAR (120m Scherzer Arch Span)
+            🟢 DETOUR CLEAR ({scenario.detourDistance} Corridor)
           </div>
         </div>
 
-        {/* 3D Orbit Drag Hint */}
         <div className="absolute bottom-3 left-3 px-2 py-1 rounded bg-slate-950/60 border border-slate-800 text-[10px] font-mono text-slate-400 pointer-events-none">
           💡 Click & Drag to Orbit 360° • Scroll to Zoom
         </div>
@@ -686,7 +669,7 @@ export const ThreeLivingMap3D: React.FC<ThreeLivingMap3DProps> = ({
           }`}
         >
           {alphaBlocked ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
-          {alphaBlocked ? "Lower Drawbridge (Reopen)" : "Lift Drawbridge (Trigger Closure)"}
+          {alphaBlocked ? `Reopen ${scenario.primaryName}` : `Trigger ${scenario.incidentTitle}`}
         </button>
       </div>
     </div>

@@ -23,27 +23,24 @@ export const LivingMapCanvas: React.FC<LivingMapCanvasProps> = ({
   const rover1 = robots.find(r => r.robotId === "Rover_1");
   const rover2 = robots.find(r => r.robotId === "Rover_2");
 
+  const pos = scenario.positions;
+
   // Coordinate transforms (SVG Canvas: 800 x 520)
   const toSvgX = (x: number) => 400 + (x * 9.5);
   const toSvgY = (y: number) => 260 - (y * 5.6);
 
-  const alphaEntryX = toSvgX(-18.0);
-  const alphaEntryY = toSvgY(0.0);
-  const betaEntryX = toSvgX(22.0);
-  const betaEntryY = toSvgY(0.0);
-
   const waypointsData: Waypoint[] = [
-    { id: "start", name: scenario.hubStartLabel, x: 0.0, y: -30.0, z: 0.0, type: "depot" },
-    { id: "fork", name: "Decision Junction Point", x: 0.0, y: -10.0, z: 0.0, type: "fork" },
-    { id: "primaryEntry", name: `${scenario.primaryName} (Entry)`, x: -18.0, y: 0.0, z: 0.5, type: "bridge_alpha" },
-    { id: "primaryMid", name: `${scenario.primaryName} (Mid)`, x: -18.0, y: 12.0, z: 0.5, type: "bridge_alpha" },
-    { id: "primaryExit", name: `${scenario.primaryName} (Exit)`, x: -18.0, y: 24.0, z: 0.5, type: "bridge_alpha" },
-    { id: "detourApproach", name: `${scenario.detourName} Approach`, x: 22.0, y: -10.0, z: 0.0, type: "fork" },
-    { id: "detourEntry", name: `${scenario.detourName} (Entry)`, x: 22.0, y: 0.0, z: 0.5, type: "bridge_beta" },
-    { id: "detourMid", name: `${scenario.detourName} (Span)`, x: 22.0, y: 12.0, z: 0.5, type: "bridge_beta" },
-    { id: "detourExit", name: `${scenario.detourName} (Exit)`, x: 22.0, y: 24.0, z: 0.5, type: "bridge_beta" },
-    { id: "northApproach", name: "North Gateway Corridor", x: 0.0, y: 28.0, z: 0.0, type: "fork" },
-    { id: "goal", name: scenario.hubGoalLabel, x: 0.0, y: 38.0, z: 0.0, type: "goal" },
+    { id: "start", name: scenario.hubStartLabel, x: pos.start.x, y: pos.start.y, z: 0.0, type: "depot" },
+    { id: "fork", name: "Decision Junction Point", x: pos.fork.x, y: pos.fork.y, z: 0.0, type: "fork" },
+    { id: "primaryEntry", name: `${scenario.primaryName} (Entry)`, x: pos.primaryEntry.x, y: pos.primaryEntry.y, z: 0.5, type: "bridge_alpha" },
+    { id: "primaryMid", name: `${scenario.primaryName} (Mid)`, x: pos.primaryMid.x, y: pos.primaryMid.y, z: 0.5, type: "bridge_alpha" },
+    { id: "primaryExit", name: `${scenario.primaryName} (Exit)`, x: pos.primaryExit.x, y: pos.primaryExit.y, z: 0.5, type: "bridge_alpha" },
+    { id: "detourApproach", name: `${scenario.detourName} Approach`, x: pos.detourApproach.x, y: pos.detourApproach.y, z: 0.0, type: "fork" },
+    { id: "detourEntry", name: `${scenario.detourName} (Entry)`, x: pos.detourEntry.x, y: pos.detourEntry.y, z: 0.5, type: "bridge_beta" },
+    { id: "detourMid", name: `${scenario.detourName} (Span)`, x: pos.detourMid.x, y: pos.detourMid.y, z: 0.5, type: "bridge_beta" },
+    { id: "detourExit", name: `${scenario.detourName} (Exit)`, x: pos.detourExit.x, y: pos.detourExit.y, z: 0.5, type: "bridge_beta" },
+    { id: "northApproach", name: "North Gateway Corridor", x: pos.northApproach.x, y: pos.northApproach.y, z: 0.0, type: "fork" },
+    { id: "goal", name: scenario.hubGoalLabel, x: pos.goal.x, y: pos.goal.y, z: 0.0, type: "goal" },
   ];
 
   return (
@@ -56,9 +53,9 @@ export const LivingMapCanvas: React.FC<LivingMapCanvasProps> = ({
           </div>
           <div>
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              {scenario.title} Live Topological Map
+              {scenario.title} — 2D Topological Schematic
               <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
-                Isaac Sim 1:1 Metric Frame
+                Metric Graph Nodes
               </span>
             </h2>
             <p className="text-xs text-slate-400">
@@ -67,7 +64,6 @@ export const LivingMapCanvas: React.FC<LivingMapCanvasProps> = ({
           </div>
         </div>
 
-        {/* Quick Toggle Controls */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => onToggleBridge("Bridge_Alpha")}
@@ -107,61 +103,94 @@ export const LivingMapCanvas: React.FC<LivingMapCanvasProps> = ({
             </filter>
           </defs>
 
-          {/* Central Channel / Corridor Divider */}
-          <rect x="0" y="190" width="800" height="140" fill="url(#waterGradient)" />
-          <line x1="0" y1="190" x2="800" y2="190" stroke="#1e293b" strokeWidth="3" strokeDasharray="6 4" />
-          <line x1="0" y1="330" x2="800" y2="330" stroke="#1e293b" strokeWidth="3" strokeDasharray="6 4" />
+          {/* Scenario Specific Background Graphics */}
+          {scenario.environmentType === "waterway_bridges" ? (
+            // SF Mission Creek Canal
+            <g>
+              <rect x="0" y="190" width="800" height="140" fill="url(#waterGradient)" />
+              <line x1="0" y1="190" x2="800" y2="190" stroke="#1e293b" strokeWidth="3" strokeDasharray="6 4" />
+              <line x1="0" y1="330" x2="800" y2="330" stroke="#1e293b" strokeWidth="3" strokeDasharray="6 4" />
+              <text x="400" y="265" fill="#38bdf8" fillOpacity="0.25" fontSize="14" fontWeight="bold" letterSpacing="4" textAnchor="middle" fontFamily="monospace">
+                {scenario.waterChannelLabel}
+              </text>
+            </g>
+          ) : scenario.environmentType === "urban_grid" ? (
+            // NYC Manhattan Building Blocks
+            <g>
+              <rect x="60" y="140" width="220" height="180" rx="8" fill="#0f172a" stroke="#1e293b" strokeWidth="2" />
+              <text x="170" y="235" fill="#475569" fontSize="12" fontWeight="bold" textAnchor="middle" fontFamily="monospace">
+                SOHO CAST-IRON BLOCK
+              </text>
 
-          <text x="400" y="265" fill="#38bdf8" fillOpacity="0.25" fontSize="14" fontWeight="bold" letterSpacing="4" textAnchor="middle" fontFamily="monospace">
-            {scenario.waterChannelLabel}
-          </text>
+              <rect x="440" y="140" width="160" height="180" rx="8" fill="#0f172a" stroke="#1e293b" strokeWidth="2" />
+              <text x="520" y="235" fill="#475569" fontSize="12" fontWeight="bold" textAnchor="middle" fontFamily="monospace">
+                BROADWAY RETAIL BLOCK
+              </text>
+            </g>
+          ) : (
+            // Port Container Stacks
+            <g>
+              <rect x="60" y="140" width="140" height="180" rx="4" fill="#0f172a" stroke="#dc2626" strokeWidth="1.5" strokeDasharray="4 4" />
+              <text x="130" y="235" fill="#dc2626" fontSize="11" fontWeight="bold" textAnchor="middle" fontFamily="monospace">
+                CONTAINER STACK A
+              </text>
 
-          {/* Primary Route Structure */}
+              <rect x="360" y="140" width="140" height="180" rx="4" fill="#0f172a" stroke="#0284c7" strokeWidth="1.5" strokeDasharray="4 4" />
+              <text x="430" y="235" fill="#0284c7" fontSize="11" fontWeight="bold" textAnchor="middle" fontFamily="monospace">
+                CONTAINER STACK B
+              </text>
+            </g>
+          )}
+
+          {/* Primary Route Segment */}
           <g>
             <rect
-              x={alphaEntryX - 22}
-              y="170"
-              width="44"
-              height="180"
+              x={toSvgX(pos.primaryMid.x) - 20}
+              y={toSvgY(pos.primaryMid.y) - 60}
+              width="40"
+              height="120"
               rx="6"
               fill="#0f172a"
               stroke={alphaBlocked ? "#f43f5e" : "#334155"}
               strokeWidth="2.5"
-              className="transition-colors duration-300"
             />
-            <rect x={alphaEntryX - 12} y="175" width="24" height="170" fill="#1e293b" />
-            <line x1={alphaEntryX} y1="180" x2={alphaEntryX} y2="340" stroke="#fbbf24" strokeWidth="1.5" strokeDasharray="8 6" />
-            <text x={alphaEntryX} y="155" fill={alphaBlocked ? "#f43f5e" : "#94a3b8"} fontSize="11" fontWeight="bold" textAnchor="middle" fontFamily="monospace">
+            <text x={toSvgX(pos.primaryMid.x)} y={toSvgY(pos.primaryMid.y) - 75} fill={alphaBlocked ? "#f43f5e" : "#94a3b8"} fontSize="11" fontWeight="bold" textAnchor="middle" fontFamily="monospace">
               {scenario.primaryName}
             </text>
-            <text x={alphaEntryX} y="370" fill="#64748b" fontSize="10" textAnchor="middle" fontFamily="monospace">
-              {alphaBlocked ? `⚠️ ${scenario.incidentTitle}` : `Primary Route (${scenario.primaryDistance})`}
-            </text>
           </g>
 
-          {/* Detour Route Structure */}
+          {/* Detour Route Segment */}
           <g>
-            <rect x={betaEntryX - 22} y="170" width="44" height="180" rx="6" fill="#0f172a" stroke="#334155" strokeWidth="2.5" />
-            <rect x={betaEntryX - 12} y="175" width="24" height="170" fill="#1e293b" />
-            <line x1={betaEntryX} y1="180" x2={betaEntryX} y2="340" stroke="#fbbf24" strokeWidth="1.5" strokeDasharray="8 6" />
-            <text x={betaEntryX} y="155" fill="#38bdf8" fontSize="11" fontWeight="bold" textAnchor="middle" fontFamily="monospace">
+            <rect
+              x={toSvgX(pos.detourMid.x) - 20}
+              y={toSvgY(pos.detourMid.y) - 60}
+              width="40"
+              height="120"
+              rx="6"
+              fill="#0f172a"
+              stroke="#334155"
+              strokeWidth="2.5"
+            />
+            <text x={toSvgX(pos.detourMid.x)} y={toSvgY(pos.detourMid.y) - 75} fill="#38bdf8" fontSize="11" fontWeight="bold" textAnchor="middle" fontFamily="monospace">
               {scenario.detourName}
             </text>
-            <text x={betaEntryX} y="370" fill="#64748b" fontSize="10" textAnchor="middle" fontFamily="monospace">
-              Detour Corridor ({scenario.detourDistance})
-            </text>
           </g>
 
-          {/* Road Network Graph */}
-          <path d={`M ${toSvgX(0)} ${toSvgY(-30)} L ${toSvgX(0)} ${toSvgY(-10)}`} stroke="#334155" strokeWidth="4" strokeLinecap="round" />
-          <path d={`M ${toSvgX(0)} ${toSvgY(-10)} Q ${toSvgX(-8)} ${toSvgY(-6)}, ${toSvgX(-18)} ${toSvgY(0)}`} stroke={alphaBlocked ? "#f43f5e" : "#334155"} strokeWidth="4" strokeDasharray={alphaBlocked ? "6 4" : "none"} fill="none" />
-          <path d={`M ${toSvgX(-18)} ${toSvgY(0)} L ${toSvgX(-18)} ${toSvgY(24)}`} stroke={alphaBlocked ? "#f43f5e" : "#334155"} strokeWidth="4" strokeDasharray={alphaBlocked ? "6 4" : "none"} fill="none" />
-          <path d={`M ${toSvgX(-18)} ${toSvgY(24)} Q ${toSvgX(-8)} ${toSvgY(27)}, ${toSvgX(0)} ${toSvgY(28)}`} stroke={alphaBlocked ? "#f43f5e" : "#334155"} strokeWidth="4" strokeDasharray={alphaBlocked ? "6 4" : "none"} fill="none" />
-          <path d={`M ${toSvgX(0)} ${toSvgY(-10)} L ${toSvgX(22)} ${toSvgY(-10)}`} stroke="#334155" strokeWidth="4" fill="none" />
-          <path d={`M ${toSvgX(22)} ${toSvgY(-10)} L ${toSvgX(22)} ${toSvgY(0)}`} stroke="#334155" strokeWidth="4" fill="none" />
-          <path d={`M ${toSvgX(22)} ${toSvgY(0)} L ${toSvgX(22)} ${toSvgY(24)}`} stroke="#334155" strokeWidth="4" fill="none" />
-          <path d={`M ${toSvgX(22)} ${toSvgY(24)} Q ${toSvgX(10)} ${toSvgY(27)}, ${toSvgX(0)} ${toSvgY(28)}`} stroke="#334155" strokeWidth="4" fill="none" />
-          <path d={`M ${toSvgX(0)} ${toSvgY(28)} L ${toSvgX(0)} ${toSvgY(38)}`} stroke="#334155" strokeWidth="4" strokeLinecap="round" />
+          {/* Road Network Connections */}
+          <path d={`M ${toSvgX(pos.start.x)} ${toSvgY(pos.start.y)} L ${toSvgX(pos.fork.x)} ${toSvgY(pos.fork.y)}`} stroke="#334155" strokeWidth="4" strokeLinecap="round" />
+          
+          {/* Primary Route path */}
+          <path d={`M ${toSvgX(pos.fork.x)} ${toSvgY(pos.fork.y)} L ${toSvgX(pos.primaryEntry.x)} ${toSvgY(pos.primaryEntry.y)}`} stroke={alphaBlocked ? "#f43f5e" : "#334155"} strokeWidth="4" strokeDasharray={alphaBlocked ? "6 4" : "none"} fill="none" />
+          <path d={`M ${toSvgX(pos.primaryEntry.x)} ${toSvgY(pos.primaryEntry.y)} L ${toSvgX(pos.primaryExit.x)} ${toSvgY(pos.primaryExit.y)}`} stroke={alphaBlocked ? "#f43f5e" : "#334155"} strokeWidth="4" strokeDasharray={alphaBlocked ? "6 4" : "none"} fill="none" />
+          <path d={`M ${toSvgX(pos.primaryExit.x)} ${toSvgY(pos.primaryExit.y)} L ${toSvgX(pos.northApproach.x)} ${toSvgY(pos.northApproach.y)}`} stroke={alphaBlocked ? "#f43f5e" : "#334155"} strokeWidth="4" strokeDasharray={alphaBlocked ? "6 4" : "none"} fill="none" />
+
+          {/* Detour Route path */}
+          <path d={`M ${toSvgX(pos.fork.x)} ${toSvgY(pos.fork.y)} L ${toSvgX(pos.detourApproach.x)} ${toSvgY(pos.detourApproach.y)}`} stroke="#334155" strokeWidth="4" fill="none" />
+          <path d={`M ${toSvgX(pos.detourApproach.x)} ${toSvgY(pos.detourApproach.y)} L ${toSvgX(pos.detourEntry.x)} ${toSvgY(pos.detourEntry.y)}`} stroke="#334155" strokeWidth="4" fill="none" />
+          <path d={`M ${toSvgX(pos.detourEntry.x)} ${toSvgY(pos.detourEntry.y)} L ${toSvgX(pos.detourExit.x)} ${toSvgY(pos.detourExit.y)}`} stroke="#334155" strokeWidth="4" fill="none" />
+          <path d={`M ${toSvgX(pos.detourExit.x)} ${toSvgY(pos.detourExit.y)} L ${toSvgX(pos.northApproach.x)} ${toSvgY(pos.northApproach.y)}`} stroke="#334155" strokeWidth="4" fill="none" />
+
+          <path d={`M ${toSvgX(pos.northApproach.x)} ${toSvgY(pos.northApproach.y)} L ${toSvgX(pos.goal.x)} ${toSvgY(pos.goal.y)}`} stroke="#334155" strokeWidth="4" strokeLinecap="round" />
 
           {/* Active Path Ribbon */}
           {rover2 && (
@@ -169,12 +198,12 @@ export const LivingMapCanvas: React.FC<LivingMapCanvasProps> = ({
               {rover2.activeRoute === "VIA_BRIDGE_BETA" ? (
                 <path
                   d={`M ${toSvgX(rover2.position.x)} ${toSvgY(rover2.position.y)}
-                      L ${toSvgX(0)} ${toSvgY(-10)}
-                      L ${toSvgX(22)} ${toSvgY(-10)}
-                      L ${toSvgX(22)} ${toSvgY(0)}
-                      L ${toSvgX(22)} ${toSvgY(24)}
-                      Q ${toSvgX(10)} ${toSvgY(27)}, ${toSvgX(0)} ${toSvgY(28)}
-                      L ${toSvgX(0)} ${toSvgY(38)}`}
+                      L ${toSvgX(pos.fork.x)} ${toSvgY(pos.fork.y)}
+                      L ${toSvgX(pos.detourApproach.x)} ${toSvgY(pos.detourApproach.y)}
+                      L ${toSvgX(pos.detourEntry.x)} ${toSvgY(pos.detourEntry.y)}
+                      L ${toSvgX(pos.detourExit.x)} ${toSvgY(pos.detourExit.y)}
+                      L ${toSvgX(pos.northApproach.x)} ${toSvgY(pos.northApproach.y)}
+                      L ${toSvgX(pos.goal.x)} ${toSvgY(pos.goal.y)}`}
                   stroke="#00f0ff"
                   strokeWidth="3.5"
                   strokeDasharray="8 4"
@@ -185,11 +214,11 @@ export const LivingMapCanvas: React.FC<LivingMapCanvasProps> = ({
               ) : (
                 <path
                   d={`M ${toSvgX(rover2.position.x)} ${toSvgY(rover2.position.y)}
-                      L ${toSvgX(0)} ${toSvgY(-10)}
-                      Q ${toSvgX(-8)} ${toSvgY(-6)}, ${toSvgX(-18)} ${toSvgY(0)}
-                      L ${toSvgX(-18)} ${toSvgY(24)}
-                      Q ${toSvgX(-8)} ${toSvgY(27)}, ${toSvgX(0)} ${toSvgY(28)}
-                      L ${toSvgX(0)} ${toSvgY(38)}`}
+                      L ${toSvgX(pos.fork.x)} ${toSvgY(pos.fork.y)}
+                      L ${toSvgX(pos.primaryEntry.x)} ${toSvgY(pos.primaryEntry.y)}
+                      L ${toSvgX(pos.primaryExit.x)} ${toSvgY(pos.primaryExit.y)}
+                      L ${toSvgX(pos.northApproach.x)} ${toSvgY(pos.northApproach.y)}
+                      L ${toSvgX(pos.goal.x)} ${toSvgY(pos.goal.y)}`}
                   stroke="#00f0ff"
                   strokeWidth="3.5"
                   strokeDasharray="8 4"
@@ -202,12 +231,12 @@ export const LivingMapCanvas: React.FC<LivingMapCanvasProps> = ({
 
           {/* Obstacle Hazard Icon */}
           {alphaBlocked && (
-            <g transform={`translate(${alphaEntryX}, ${alphaEntryY + 25})`} filter="url(#glow-rose)">
+            <g transform={`translate(${toSvgX(pos.primaryMid.x)}, ${toSvgY(pos.primaryMid.y)})`} filter="url(#glow-rose)">
               <circle r="16" fill="#f43f5e" fillOpacity="0.25" className="animate-ping" />
               <circle r="12" fill="#f43f5e" />
               <rect x="-18" y="-4" width="36" height="8" rx="2" fill="#fff" transform="rotate(-25)" />
               <text y="28" fill="#f43f5e" fontSize="10" fontWeight="bold" textAnchor="middle" fontFamily="monospace">
-                ⛔ HAZARD BLOCKED
+                ⛔ {scenario.incidentTitle}
               </text>
             </g>
           )}
@@ -239,7 +268,6 @@ export const LivingMapCanvas: React.FC<LivingMapCanvasProps> = ({
           {/* Rover 1 (Scout) */}
           {rover1 && (
             <g transform={`translate(${toSvgX(rover1.position.x)}, ${toSvgY(rover1.position.y)})`} filter="url(#glow-amber)">
-              <path d="M 0 0 L -25 -40 L 25 -40 Z" fill="#f59e0b" fillOpacity="0.15" />
               <circle r="18" fill="none" stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="3 3" className="animate-spin" style={{ animationDuration: '6s' }} />
               <circle r="9" fill="#f59e0b" stroke="#fff" strokeWidth="2" />
               <circle r="3" fill="#090e1a" />
@@ -267,13 +295,13 @@ export const LivingMapCanvas: React.FC<LivingMapCanvasProps> = ({
             </g>
           )}
 
-          {/* Staging & Goal Labels */}
-          <g transform={`translate(${toSvgX(0)}, ${toSvgY(-30)})`}>
+          {/* Hub Labels */}
+          <g transform={`translate(${toSvgX(pos.start.x)}, ${toSvgY(pos.start.y)})`}>
             <text y="24" fill="#10b981" fontSize="11" fontWeight="bold" textAnchor="middle" fontFamily="monospace">
               📍 {scenario.hubStartLabel}
             </text>
           </g>
-          <g transform={`translate(${toSvgX(0)}, ${toSvgY(38)})`}>
+          <g transform={`translate(${toSvgX(pos.goal.x)}, ${toSvgY(pos.goal.y)})`}>
             <text y="-14" fill="#a855f7" fontSize="11" fontWeight="bold" textAnchor="middle" fontFamily="monospace">
               🎯 {scenario.hubGoalLabel}
             </text>
@@ -288,22 +316,6 @@ export const LivingMapCanvas: React.FC<LivingMapCanvasProps> = ({
             </div>
           </div>
         )}
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-slate-800 text-xs text-slate-400 font-mono">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-amber-500" />
-            <span>Lead Scout ({rover1?.status})</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-cyan-400" />
-            <span>Trailing Unit ({rover2?.status})</span>
-          </div>
-        </div>
-        <div className="text-slate-500">
-          World Labs Twin: {scenario.worldId.slice(0, 8)}...
-        </div>
       </div>
     </div>
   );

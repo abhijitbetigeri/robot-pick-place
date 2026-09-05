@@ -50,6 +50,7 @@ export interface ScenarioDef {
   subtitle: string;
   worldId: string;
   marbleUrl: string;
+  environmentType: "waterway_bridges" | "urban_grid" | "port_depot";
   primaryName: string;
   detourName: string;
   incidentType: string;
@@ -61,4 +62,17 @@ export interface ScenarioDef {
   waterChannelLabel: string;
   hubStartLabel: string;
   hubGoalLabel: string;
+  positions: {
+    start: Position3D;
+    fork: Position3D;
+    primaryEntry: Position3D;
+    primaryMid: Position3D;
+    primaryExit: Position3D;
+    detourApproach: Position3D;
+    detourEntry: Position3D;
+    detourMid: Position3D;
+    detourExit: Position3D;
+    northApproach: Position3D;
+    goal: Position3D;
+  };
 }
