@@ -298,45 +298,80 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     if (!sceneRef.current || !roomGroupRef.current || !marble3dGroupRef.current) return;
 
     // 1. Rebuild architectural room geometry
-    buildPhotorealisticRoom(sceneRef.current, listing);
+    buildPhotorealisticRoom(sceneRef.current, listing, showWorldLabs3D);
 
-    // 2. Load World Labs 3D GLTF Collider Mesh if available
+    // 2. Load World Labs 3D GLTF Collider Mesh and 360 Panorama Dome
     const marbleGroup = marble3dGroupRef.current;
     marbleGroup.clear();
 
-    if (listing.glbUrl && showWorldLabs3D) {
-      const loader = new GLTFLoader();
-      loader.load(
-        listing.glbUrl,
-        (gltf) => {
-          const model = gltf.scene;
-          model.position.set(0, 0, 0);
+    if (showWorldLabs3D) {
+      // 2a. 360° Photorealistic Environment Panorama Dome
+      if (listing.panoUrl) {
+        const textureLoader = new THREE.TextureLoader();
+        textureLoader.load(
+          listing.panoUrl,
+          (panoTex) => {
+            panoTex.colorSpace = THREE.SRGBColorSpace;
+            const panoGeo = new THREE.SphereGeometry(48, 64, 48);
+            panoGeo.scale(-1, 1, 1);
+            const panoMat = new THREE.MeshBasicMaterial({
+              map: panoTex,
+              side: THREE.BackSide,
+              depthWrite: false,
+            });
+            const panoSphere = new THREE.Mesh(panoGeo, panoMat);
+            panoSphere.name = "World_Labs_Pano_Dome";
+            panoSphere.position.set(0, listing.metricBounds.ceilingHeightMeters * 0.45, 0);
+            marbleGroup.add(panoSphere);
+          },
+          undefined,
+          (err) => console.log("Notice: Error loading panorama dome:", err)
+        );
+      }
 
-          // Compute bounding box to scale naturally into room
-          const box = new THREE.Box3().setFromObject(model);
-          const size = box.getSize(new THREE.Vector3());
-          const maxDim = Math.max(size.x, size.z);
-          const targetDim = Math.max(listing.metricBounds.widthMeters, listing.metricBounds.depthMeters) * 0.95;
-          const scale = maxDim > 0 ? targetDim / maxDim : 1;
-          model.scale.set(scale, scale, scale);
+      // 2b. Generative 3D GLTF Collider Mesh
+      if (listing.glbUrl) {
+        const loader = new GLTFLoader();
+        loader.load(
+          listing.glbUrl,
+          (gltf) => {
+            const model = gltf.scene;
+            model.name = "World_Labs_GLB_Mesh";
 
-          model.traverse((child) => {
-            if ((child as THREE.Mesh).isMesh) {
-              const mesh = child as THREE.Mesh;
-              mesh.castShadow = true;
-              mesh.receiveShadow = true;
-              if (mesh.material) {
-                (mesh.material as THREE.Material).transparent = true;
-                (mesh.material as THREE.Material).opacity = 0.85;
+            // Center and rest model at floor level (y = 0)
+            const box = new THREE.Box3().setFromObject(model);
+            const center = box.getCenter(new THREE.Vector3());
+            const min = box.min;
+            const size = box.getSize(new THREE.Vector3());
+
+            model.position.set(-center.x, -min.y, -center.z);
+
+            model.traverse((child) => {
+              if ((child as THREE.Mesh).isMesh) {
+                const mesh = child as THREE.Mesh;
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                if (!mesh.material || Array.isArray(mesh.material)) {
+                  mesh.material = new THREE.MeshStandardMaterial({
+                    color: 0x94a3b8,
+                    roughness: 0.7,
+                    metalness: 0.1,
+                    transparent: true,
+                    opacity: 0.65,
+                  });
+                } else {
+                  (mesh.material as THREE.Material).transparent = true;
+                  (mesh.material as THREE.Material).opacity = 0.65;
+                }
               }
-            }
-          });
+            });
 
-          marbleGroup.add(model);
-        },
-        undefined,
-        (err) => console.log("Notice: No custom GLB found for listing, using PBR spatial room", err)
-      );
+            marbleGroup.add(model);
+          },
+          undefined,
+          (err) => console.log("Notice: No custom GLB found for listing, using PBR spatial room", err)
+        );
+      }
     }
 
     // 3. Re-frame camera and orbit controls to fit new room bounds
@@ -346,14 +381,14 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
       const h = listing.metricBounds.ceilingHeightMeters;
 
       orbitControlsRef.current.target.set(0, h * 0.35, 0);
-      cameraRef.current.position.set(w * 0.65, h * 1.8, d * 0.85);
+      cameraRef.current.position.set(w * 0.55, h * 1.6, d * 0.75);
       cameraRef.current.lookAt(0, h * 0.35, 0);
       orbitControlsRef.current.update();
     }
   }, [listing, showWorldLabs3D]);
 
   // --- PHOTOREALISTIC ARCHITECTURAL ROOM ---
-  const buildPhotorealisticRoom = (scene: THREE.Scene, list: RealEstateListing) => {
+  const buildPhotorealisticRoom = (scene: THREE.Scene, list: RealEstateListing, isGenerativeMode: boolean = false) => {
     if (!roomGroupRef.current) return;
     const roomGroup = roomGroupRef.current;
     roomGroup.clear();
@@ -361,17 +396,18 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     const w = list.metricBounds.widthMeters;
     const d = list.metricBounds.depthMeters;
     const h = list.metricBounds.ceilingHeightMeters;
+    const hasPanoOrGlb = isGenerativeMode && Boolean(list.panoUrl || list.glbUrl);
 
     // 1. European Parquet Hardwood Floor with High-End PBR Gloss
     const floorCanvas = document.createElement('canvas');
     floorCanvas.width = 512;
     floorCanvas.height = 512;
     const fCtx = floorCanvas.getContext('2d')!;
-    fCtx.fillStyle = '#451a03';
+    fCtx.fillStyle = hasPanoOrGlb ? '#1e293b' : '#451a03';
     fCtx.fillRect(0, 0, 512, 512);
 
     // Wide plank herringbone wood tiles
-    fCtx.strokeStyle = '#271e18';
+    fCtx.strokeStyle = hasPanoOrGlb ? '#0f172a' : '#271e18';
     fCtx.lineWidth = 2;
     for (let x = 0; x < 512; x += 64) {
       for (let y = 0; y < 512; y += 128) {
@@ -388,8 +424,10 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
 
     const floorMat = new THREE.MeshStandardMaterial({
       map: floorTex,
-      roughness: 0.35,
+      roughness: hasPanoOrGlb ? 0.6 : 0.35,
       metalness: 0.08,
+      transparent: hasPanoOrGlb,
+      opacity: hasPanoOrGlb ? 0.85 : 1.0,
     });
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(w, d), floorMat);
     floor.rotation.x = -Math.PI / 2;
@@ -421,6 +459,8 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
       roughness: 0.95,
       metalness: 0.0,
       color: 0xf1f5f9,
+      transparent: hasPanoOrGlb,
+      opacity: hasPanoOrGlb ? 0.75 : 1.0,
     });
     const rug = new THREE.Mesh(new THREE.PlaneGeometry(w * 0.38, d * 0.45), rugMat);
     rug.rotation.x = -Math.PI / 2;
@@ -433,7 +473,26 @@ export const Viewport3D: React.FC<Viewport3DProps> = ({
     grid.position.y = 0.003;
     roomGroup.add(grid);
 
-    // 4. Walls
+    // If 360 panorama dome is active, omit tall opaque walls so full panoramic environment is visible
+    if (hasPanoOrGlb) {
+      // Subtle architectural perimeter boundary frame
+      const boundaryMat = new THREE.MeshStandardMaterial({
+        color: 0x38bdf8,
+        roughness: 0.3,
+        metalness: 0.8,
+        transparent: true,
+        opacity: 0.4,
+      });
+      const perimeter = new THREE.LineSegments(
+        new THREE.EdgesGeometry(new THREE.BoxGeometry(w, 0.2, d)),
+        new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.5 })
+      );
+      perimeter.position.set(0, 0.1, 0);
+      roomGroup.add(perimeter);
+      return;
+    }
+
+    // 4. Procedural Walls (when not in generative 360 mode)
     const wallMat = new THREE.MeshStandardMaterial({
       color: 0xf8fafc,
       roughness: 0.88,
