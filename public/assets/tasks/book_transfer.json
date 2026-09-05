@@ -1,0 +1,200 @@
+{
+  "task": "Move book from Shelf A (Bedroom 1) to Shelf B (Bedroom 2)",
+  "robot": "Stretch-style mobile manipulator (planar base, mast lift, telescoping arm)",
+  "simulator": "MuJoCo 3.12.0",
+  "start": {
+    "x": -4.2,
+    "y": 1.2,
+    "z": 0.852,
+    "room": "Bedroom 1",
+    "shelf": "A"
+  },
+  "end": {
+    "x": 4.199,
+    "y": -1.227,
+    "z": 0.852,
+    "room": "Bedroom 2",
+    "shelf": "B"
+  },
+  "distance_travelled_m": 8.74,
+  "crossed_rooms": true,
+  "success": true,
+  "phases": [
+    {
+      "phase": "Approach Bedroom 1",
+      "t": 2.37,
+      "book": {
+        "x": -4.2,
+        "y": 1.2,
+        "z": 0.852
+      },
+      "room": "Bedroom 1",
+      "held": false
+    },
+    {
+      "phase": "Align with Shelf A",
+      "t": 4.36,
+      "book": {
+        "x": -4.2,
+        "y": 1.2,
+        "z": 0.852
+      },
+      "room": "Bedroom 1",
+      "held": false
+    },
+    {
+      "phase": "Extend to book",
+      "t": 4.72,
+      "book": {
+        "x": -4.2,
+        "y": 1.2,
+        "z": 0.852
+      },
+      "room": "Bedroom 1",
+      "held": false
+    },
+    {
+      "phase": "GRASP book",
+      "t": 4.97,
+      "book": {
+        "x": -4.201,
+        "y": 1.178,
+        "z": 0.852
+      },
+      "room": "Bedroom 1",
+      "held": true
+    },
+    {
+      "phase": "Lift off shelf",
+      "t": 5.34,
+      "book": {
+        "x": -4.201,
+        "y": 1.181,
+        "z": 1.071
+      },
+      "room": "Bedroom 1",
+      "held": true
+    },
+    {
+      "phase": "Retract arm",
+      "t": 5.73,
+      "book": {
+        "x": -4.202,
+        "y": 0.74,
+        "z": 1.07
+      },
+      "room": "Bedroom 1",
+      "held": true
+    },
+    {
+      "phase": "Back out of alcove",
+      "t": 7.75,
+      "book": {
+        "x": -4.201,
+        "y": -0.125,
+        "z": 1.07
+      },
+      "room": "Bedroom 1",
+      "held": true
+    },
+    {
+      "phase": "Cross to doorway",
+      "t": 10.16,
+      "book": {
+        "x": -1.473,
+        "y": 0.606,
+        "z": 1.07
+      },
+      "room": "Bedroom 1",
+      "held": true
+    },
+    {
+      "phase": "Through the door",
+      "t": 12.58,
+      "book": {
+        "x": 1.326,
+        "y": 0.597,
+        "z": 1.07
+      },
+      "room": "Bedroom 2",
+      "held": true
+    },
+    {
+      "phase": "Approach Bedroom 2",
+      "t": 17.09,
+      "book": {
+        "x": 4.152,
+        "y": -2.12,
+        "z": 1.07
+      },
+      "room": "Bedroom 2",
+      "held": true
+    },
+    {
+      "phase": "Align with Shelf B",
+      "t": 18.77,
+      "book": {
+        "x": 4.202,
+        "y": -1.623,
+        "z": 1.07
+      },
+      "room": "Bedroom 2",
+      "held": true
+    },
+    {
+      "phase": "Extend over shelf",
+      "t": 19.17,
+      "book": {
+        "x": 4.198,
+        "y": -1.217,
+        "z": 1.07
+      },
+      "room": "Bedroom 2",
+      "held": true
+    },
+    {
+      "phase": "Lower to surface",
+      "t": 19.48,
+      "book": {
+        "x": 4.199,
+        "y": -1.227,
+        "z": 0.852
+      },
+      "room": "Bedroom 2",
+      "held": true
+    },
+    {
+      "phase": "RELEASE book",
+      "t": 19.73,
+      "book": {
+        "x": 4.199,
+        "y": -1.227,
+        "z": 0.852
+      },
+      "room": "Bedroom 2",
+      "held": false
+    },
+    {
+      "phase": "Retract from shelf",
+      "t": 20.04,
+      "book": {
+        "x": 4.199,
+        "y": -1.227,
+        "z": 0.852
+      },
+      "room": "Bedroom 2",
+      "held": false
+    },
+    {
+      "phase": "Withdraw",
+      "t": 24.55,
+      "book": {
+        "x": 4.199,
+        "y": -1.227,
+        "z": 0.852
+      },
+      "room": "Bedroom 2",
+      "held": false
+    }
+  ]
+}

@@ -8,6 +8,8 @@ import { ObjectPropertiesPanel } from './components/ObjectPropertiesPanel';
 import { SimulationExportModal } from './components/SimulationExportModal';
 import { ListingDetailsModal } from './components/ListingDetailsModal';
 import { FloorplanOverview2D } from './components/FloorplanOverview2D';
+import { SharePanel } from './components/SharePanel';
+import { useSharedScene } from './hooks/useSharedScene';
 import {
   Home,
   Plus,
@@ -35,6 +37,9 @@ export const RealEstateApp: React.FC = () => {
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
   const [isListingModalOpen, setIsListingModalOpen] = useState<boolean>(false);
   const [isFloorplanOpen, setIsFloorplanOpen] = useState<boolean>(false);
+
+  // Live co-staging: publishes the scene, syncs object transforms, tracks viewers.
+  const shared = useSharedScene(currentListing, objects, setObjects);
 
   // --- OBJECT MANIPULATION HANDLERS ---
   const handleSelectObject = (id: string | null) => {
@@ -170,6 +175,8 @@ export const RealEstateApp: React.FC = () => {
               <ExternalLink className="w-3 h-3 text-lime-400" />
             </a>
           )}
+
+          <SharePanel shared={shared} />
         </div>
 
         {/* Right Action Tools */}
