@@ -28,21 +28,21 @@
     "spz_to_mujoco": {
       "rotate_x_deg": 90,
       "then_translate": [
-        -0.27002,
-        1.62207,
-        2.79688
+        0.03223,
+        0.50879,
+        2.6543
       ],
       "measured_room_m": {
-        "width": 4.437,
-        "depth": 5.162,
-        "height": 2.828
+        "width": 2.314,
+        "depth": 7.498,
+        "height": 2.684
       },
       "raw_bbox_m": [
-        11.52,
-        20.37,
-        17.23
+        6.86,
+        8.12,
+        9.56
       ],
-      "splats": 1920000,
+      "splats": 500000,
       "percentile_trim": 0.5
     }
   },

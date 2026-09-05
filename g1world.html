@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>G1 in the Marble world</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin:0; background:#0a0e18; color:#e6edf7; overflow:hidden;
+           font:13px/1.45 'Outfit',system-ui,-apple-system,sans-serif; }
+    #app { position:fixed; inset:0; }
+    canvas { display:block; }
+    .hud { position:fixed; z-index:5; background:rgba(8,12,22,.76); backdrop-filter:blur(10px);
+           border:1px solid rgba(255,255,255,.10); border-radius:11px; padding:10px 14px; }
+    #top { top:12px; left:12px; }
+    #top b { font-size:13px; }
+    #info,#status,#phase { font-family:ui-monospace,monospace; font-size:11px; color:#93a5c0; }
+    #keys { bottom:12px; left:12px; line-height:1.7; }
+    kbd { background:rgba(255,255,255,.09); border:1px solid rgba(255,255,255,.16);
+          border-radius:4px; padding:1px 5px; font-family:ui-monospace,monospace; font-size:10px; }
+    #phase { position:fixed; bottom:14px; right:14px; z-index:5; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <div class="hud" id="top">
+    <b>Unitree G1 · World Labs Marble</b>
+    <div id="info">loading…</div>
+    <div id="status">…</div>
+  </div>
+  <div class="hud" id="keys">
+    <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move &nbsp;
+    <kbd>Q</kbd><kbd>E</kbd> turn &nbsp; <kbd>R</kbd><kbd>F</kbd> up/down<br/>
+    <kbd>space</kbd> play/pause &nbsp; <kbd>[</kbd><kbd>]</kbd> step &nbsp;
+    <kbd>G</kbd> copy transform &nbsp;· drag to orbit
+  </div>
+  <div class="hud" id="phase">—</div>
+  <script type="module" src="/src/replay/g1world.ts"></script>
+</body>
+</html>
