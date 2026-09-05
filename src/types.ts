@@ -27,21 +27,27 @@ export interface Bridge {
   updatedAt: number;
 }
 
-export interface EventLog {
-  _id?: string;
-  timestamp: number;
-  source: string;
-  message: string;
-  severity: "info" | "warning" | "critical";
-}
-
 export interface Waypoint {
   id: string;
   name: string;
-  x: number;
-  y: number;
-  z: number;
-  type: "depot" | "fork" | "bridge_alpha" | "bridge_beta" | "goal";
+  position?: Position3D;
+  x?: number;
+  y?: number;
+  z?: number;
+  type?: string;
+  isBlocked?: boolean;
+}
+
+export interface EventLog {
+  _id?: string;
+  timestamp: number;
+  type: "HAZARD_DETECTED" | "REROUTE_OPTIMIZED" | "MISSION_STARTED" | "MISSION_COMPLETED" | "STATUS_UPDATE";
+  message: string;
+  robotId?: string;
+  bridgeId?: string;
+  severity?: "info" | "warning" | "critical" | "success";
+  source?: string;
+  details?: Record<string, any>;
 }
 
 export interface ScenarioDef {
@@ -50,6 +56,10 @@ export interface ScenarioDef {
   subtitle: string;
   worldId: string;
   marbleUrl: string;
+  glbPath: string;
+  panoPath: string;
+  metricScale: number;
+  groundOffset: number;
   environmentType: "waterway_bridges" | "urban_grid" | "port_depot";
   primaryName: string;
   detourName: string;
@@ -76,3 +86,4 @@ export interface ScenarioDef {
     goal: Position3D;
   };
 }
+
