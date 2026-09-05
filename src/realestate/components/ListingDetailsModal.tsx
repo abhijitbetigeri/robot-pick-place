@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { RealEstateListing } from '../types';
 import { SAMPLE_LISTINGS } from '../data/sampleListings';
+import { HOUSES_DATASET_LISTINGS } from '../data/housesDatasetListings';
 import {
   Home,
   DollarSign,
@@ -13,6 +14,8 @@ import {
   Search,
   CheckCircle2,
   Calendar,
+  Database,
+  Building,
 } from 'lucide-react';
 
 interface ListingDetailsModalProps {
@@ -32,6 +35,8 @@ export const ListingDetailsModal: React.FC<ListingDetailsModalProps> = ({
 }) => {
   const [inputUrl, setInputUrl] = useState<string>('');
   const [isIngesting, setIsIngesting] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<'all' | 'luxury' | 'dataset'>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   if (!isOpen) return null;
 
@@ -46,6 +51,23 @@ export const ListingDetailsModal: React.FC<ListingDetailsModalProps> = ({
       setIsIngesting(false);
     }
   };
+
+  const allAvailableListings = [...SAMPLE_LISTINGS, ...HOUSES_DATASET_LISTINGS];
+
+  const filteredListings = allAvailableListings.filter((item) => {
+    if (activeTab === 'luxury' && item.source === 'mls') return false;
+    if (activeTab === 'dataset' && item.source !== 'mls') return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      return (
+        item.title.toLowerCase().includes(q) ||
+        item.city.toLowerCase().includes(q) ||
+        item.state.toLowerCase().includes(q) ||
+        item.address.toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 selection:bg-cyan-500/30">
@@ -97,13 +119,64 @@ export const ListingDetailsModal: React.FC<ListingDetailsModalProps> = ({
             </div>
           </form>
 
-          {/* Quick Select Sample Properties */}
-          <div className="space-y-2.5">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-              Or Choose a Verified Real Estate Twin:
-            </span>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {SAMPLE_LISTINGS.map((item) => {
+          {/* Quick Select Tabs & Search */}
+          <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              {/* Category Filter Tabs */}
+              <div className="flex items-center gap-1.5 p-1 bg-slate-900 border border-slate-800 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('all')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-all ${
+                    activeTab === 'all'
+                      ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/20'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  All ({allAvailableListings.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('luxury')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-all flex items-center gap-1 ${
+                    activeTab === 'luxury'
+                      ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/20'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Building className="w-3 h-3" />
+                  <span>Curated Penthouses</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('dataset')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-all flex items-center gap-1 ${
+                    activeTab === 'dataset'
+                      ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/20'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Database className="w-3 h-3" />
+                  <span>Houses Dataset</span>
+                </button>
+              </div>
+
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                <input
+                  type="text"
+                  placeholder="Filter by city, address..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full sm:w-56 bg-slate-900 border border-slate-800 rounded-xl pl-8 pr-3 py-1.5 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+            </div>
+
+            {/* Listings Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
+              {filteredListings.map((item) => {
                 const isSelected = currentListing.id === item.id;
                 return (
                   <div
@@ -134,7 +207,7 @@ export const ListingDetailsModal: React.FC<ListingDetailsModalProps> = ({
                       <span>{item.sqft} sqft</span>
                       <span className="text-cyan-400 flex items-center gap-1">
                         {isSelected && <CheckCircle2 className="w-3 h-3 text-cyan-400" />}
-                        {isSelected ? 'Active' : 'Load'}
+                        {isSelected ? 'Active' : 'Load Twin'}
                       </span>
                     </div>
                   </div>
