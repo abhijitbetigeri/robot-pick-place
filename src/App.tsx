@@ -1,26 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Navbar } from './components/Navbar';
-import { MissionMetrics } from './components/MissionMetrics';
-import { ScenarioSelector } from './components/ScenarioSelector';
-import { ThreeLivingMap3D } from './components/ThreeLivingMap3D';
-import { LivingMapCanvas } from './components/LivingMapCanvas';
-import { DigitalTwinViewer } from './components/DigitalTwinViewer';
-import { LiveEventFeed } from './components/LiveEventFeed';
-import { SimulationControls } from './components/SimulationControls';
-import { JudgeCheatSheet } from './components/JudgeCheatSheet';
-import { Robot, Bridge, EventLog, ScenarioDef } from './types';
-import { Box, Layers } from 'lucide-react';
+import { CinematicViewport3D } from './components/CinematicViewport3D';
+import { Robot, Bridge, ScenarioDef } from './types';
+import { Radio, ExternalLink, Sparkles } from 'lucide-react';
 
 const SCENARIOS: Record<string, ScenarioDef> = {
   sf_mission_creek: {
     id: "sf_mission_creek",
-    title: "SF Mission Creek (China Basin)",
-    subtitle: "Two parallel drawbridges crossing Mission Creek canal: 4th St (Bascule) & 3rd St (Scherzer Lift)",
+    title: "SF Mission Creek Bridges",
+    subtitle: "Two parallel drawbridges crossing canal (4th St & 3rd St)",
     worldId: "272b9f6e-5c61-4729-9511-faf551e139de",
     marbleUrl: "https://marble.worldlabs.ai/world/272b9f6e-5c61-4729-9511-faf551e139de",
     environmentType: "waterway_bridges",
-    primaryName: "4th St Bridge (Alpha)",
-    detourName: "3rd St Bridge (Beta)",
+    primaryName: "4th St Bridge",
+    detourName: "3rd St Bridge",
     incidentType: "MAINTENANCE_DRAWBRIDGE_LIFT",
     incidentTitle: "Drawbridge Lifted for Tugboat",
     primaryDistance: "88m",
@@ -28,8 +20,8 @@ const SCENARIOS: Record<string, ScenarioDef> = {
     delayAvoided: "8m 30s",
     delaySeconds: 510,
     waterChannelLabel: "≈ MISSION CREEK CANAL WATERWAY ≈",
-    hubStartLabel: "South Depot (China Basin)",
-    hubGoalLabel: "North Goal (Oracle Park Hub)",
+    hubStartLabel: "South Depot",
+    hubGoalLabel: "North Goal",
     positions: {
       start: { x: 0.0, y: -30.0, z: 0.0 },
       fork: { x: 0.0, y: -12.0, z: 0.0 },
@@ -46,22 +38,22 @@ const SCENARIOS: Record<string, ScenarioDef> = {
   },
   nyc_soho: {
     id: "nyc_soho",
-    title: "NYC Soho Urban Grid",
-    subtitle: "High-density Manhattan block: Mercer St narrow alleyway vs Broadway Avenue detour",
+    title: "NYC Soho Urban Canyon",
+    subtitle: "Historic cobblestone alleyway vs Broadway avenue detour",
     worldId: "7e7a2603-0c27-4939-9c9b-2be271fa85f2",
     marbleUrl: "https://marble.worldlabs.ai/world/7e7a2603-0c27-4939-9c9b-2be271fa85f2",
     environmentType: "urban_grid",
-    primaryName: "Mercer St Alleyway",
-    detourName: "Broadway Avenue Corridor",
+    primaryName: "Mercer St Alley",
+    detourName: "Broadway Avenue",
     incidentType: "UTILITY_TRENCH_COLLAPSE",
-    incidentTitle: "Water Main Trench Collapse & Emergency Roadwork",
+    incidentTitle: "Utility Trench Roadwork",
     primaryDistance: "65m",
     detourDistance: "110m",
     delayAvoided: "11m 45s",
     delaySeconds: 705,
-    waterChannelLabel: "🏙️ PRINCE ST / MERCER ST URBAN CORRIDOR 🏙️",
-    hubStartLabel: "Soho Micro-Hub Staging",
-    hubGoalLabel: "Customer Delivery Hub (Spring St)",
+    waterChannelLabel: "🏙️ SOHO URBAN CORRIDOR 🏙️",
+    hubStartLabel: "Soho Hub",
+    hubGoalLabel: "Delivery Hub",
     positions: {
       start: { x: 0.0, y: -32.0, z: 0.0 },
       fork: { x: 0.0, y: -16.0, z: 0.0 },
@@ -78,22 +70,22 @@ const SCENARIOS: Record<string, ScenarioDef> = {
   },
   port_logistics: {
     id: "port_logistics",
-    title: "Automated Port Container Terminal",
-    subtitle: "Intermodal shipping container depot: Gantry Bay Alpha vs Bay Beta Rail Bypass",
+    title: "Automated Port Terminal",
+    subtitle: "Heavy AGV freight lanes between container stacks",
     worldId: "c6359220-4637-4a19-841e-d55cea097dd6",
     marbleUrl: "https://marble.worldlabs.ai/world/c6359220-4637-4a19-841e-d55cea097dd6",
     environmentType: "port_depot",
-    primaryName: "Gantry Crane Bay Alpha",
-    detourName: "Stacking Yard Bay Beta",
+    primaryName: "Gantry Bay Alpha",
+    detourName: "Yard Bay Beta",
     incidentType: "GANTRY_CONTAINER_SPILL",
-    incidentTitle: "Overturned 40ft Freight Container Blockade",
+    incidentTitle: "Fallen 40ft Container",
     primaryDistance: "90m",
     detourDistance: "140m",
     delayAvoided: "14m 20s",
     delaySeconds: 860,
-    waterChannelLabel: "🚢 GANTRY CRANE AUTOMATED AGV LANES 🚢",
-    hubStartLabel: "Berth 12 AGV Staging",
-    hubGoalLabel: "Intermodal Railhead Freight Hub",
+    waterChannelLabel: "🚢 AGV FREIGHT LANES 🚢",
+    hubStartLabel: "Berth 12",
+    hubGoalLabel: "Railhead Terminal",
     positions: {
       start: { x: -15.0, y: -30.0, z: 0.0 },
       fork: { x: -15.0, y: -12.0, z: 0.0 },
@@ -112,7 +104,6 @@ const SCENARIOS: Record<string, ScenarioDef> = {
 
 export function App() {
   const [currentScenarioId, setCurrentScenarioId] = useState<string>("sf_mission_creek");
-  const [viewMode, setViewMode] = useState<"3D" | "2D">("3D");
   const scenario = SCENARIOS[currentScenarioId] || SCENARIOS["sf_mission_creek"];
   const pos = scenario.positions;
 
@@ -156,33 +147,11 @@ export function App() {
     },
   ]);
 
-  const [logs, setLogs] = useState<EventLog[]>([
-    {
-      timestamp: Date.now() - 3000,
-      source: "Convex_Dispatcher",
-      message: `Living Map spatial network online for ${scenario.title}. Primary & Detour paths OPEN.`,
-      severity: "info",
-    },
-  ]);
-
   const [simStep, setSimStep] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [delayAvoided, setDelayAvoided] = useState(0);
-  const [stoppagesPrevented, setStoppagesPrevented] = useState(0);
 
   const autoRunTimerRef = useRef<any>(null);
-
-  const bridgeAlpha = bridges.find(b => b.bridgeId === "Bridge_Alpha");
-  const alphaBlocked = bridgeAlpha?.isBlocked ?? false;
-
-  const addLog = (source: string, message: string, severity: "info" | "warning" | "critical") => {
-    setLogs(prev => [{
-      timestamp: Date.now(),
-      source,
-      message,
-      severity,
-    }, ...prev.slice(0, 24)]);
-  };
 
   const handleSelectScenario = (id: string) => {
     const sc = SCENARIOS[id];
@@ -192,7 +161,6 @@ export function App() {
     if (autoRunTimerRef.current) clearInterval(autoRunTimerRef.current);
     setSimStep(0);
     setDelayAvoided(0);
-    setStoppagesPrevented(0);
     const p = sc.positions;
     setBridges([
       {
@@ -232,31 +200,15 @@ export function App() {
         updatedAt: Date.now(),
       },
     ]);
-    setLogs([
-      {
-        timestamp: Date.now(),
-        source: "Convex_Dispatcher",
-        message: `Switched active digital twin to ${sc.title}. Topo graph reconfigured to 1:1 metric geometry.`,
-        severity: "info",
-      },
-    ]);
   };
 
   const handleToggleBridge = (bridgeId: string) => {
     setBridges(prev => prev.map(b => {
       if (b.bridgeId === bridgeId) {
-        const nextBlocked = !b.isBlocked;
-        addLog(
-          "Mission_Control",
-          nextBlocked
-            ? `⚠️ ${b.name} set to BLOCKED (${scenario.incidentTitle}). Global costmap delta broadcasted.`
-            : `✅ ${b.name} reopened. Normal transit restored.`,
-          nextBlocked ? "warning" : "info"
-        );
         return {
           ...b,
-          isBlocked: nextBlocked,
-          costMultiplier: nextBlocked ? 999.0 : 1.0,
+          isBlocked: !b.isBlocked,
+          costMultiplier: !b.isBlocked ? 999.0 : 1.0,
           updatedAt: Date.now(),
         };
       }
@@ -292,8 +244,6 @@ export function App() {
       },
     ]);
     setDelayAvoided(0);
-    setStoppagesPrevented(0);
-    addLog("Mission_Control", `🔄 Simulation reset for ${scenario.title}. Fleet stationed at start.`, "info");
   };
 
   const executeStep = (currentStep: number) => {
@@ -303,7 +253,6 @@ export function App() {
           { ...prev[0], position: pos.start, status: "EN_ROUTE" },
           { ...prev[1], position: pos.start, status: "EN_ROUTE" },
         ]);
-        addLog("Fleet_Coordinator", `🚀 Fleet departing ${scenario.hubStartLabel} targeting ${scenario.hubGoalLabel}.`, "info");
         break;
 
       case 1:
@@ -311,7 +260,6 @@ export function App() {
           { ...prev[0], position: pos.fork, status: "EN_ROUTE" },
           { ...prev[1], position: { x: pos.start.x, y: (pos.start.y + pos.fork.y) / 2, z: 0.0 }, status: "EN_ROUTE" },
         ]);
-        addLog("Rover_1", `Traversing Junction -> Targeting ${scenario.primaryName} (Shortest ${scenario.primaryDistance} route).`, "info");
         break;
 
       case 2:
@@ -319,8 +267,6 @@ export function App() {
           ...b,
           isBlocked: true,
           costMultiplier: 999.0,
-          closureReason: scenario.incidentType,
-          reportedBy: "Rover_1",
           updatedAt: Date.now(),
         } : b));
 
@@ -328,10 +274,6 @@ export function App() {
           { ...prev[0], position: pos.primaryEntry, status: "TRAPPED", activeRoute: "VIA_BRIDGE_ALPHA" },
           { ...prev[1], position: pos.fork, status: "REROUTING", activeRoute: "VIA_BRIDGE_BETA" },
         ]);
-
-        addLog("Rover_1", `🚨 OBSTACLE DETECTED at ${scenario.primaryName}! (${scenario.incidentTitle}). Firing Convex mutation...`, "critical");
-        addLog("Convex_Engine", `⚡ REACTIVE BROADCAST: Global costmap updated in 12ms. Rerouting Rover 2 to ${scenario.detourName}.`, "critical");
-        setStoppagesPrevented(1);
         setDelayAvoided(scenario.delaySeconds);
         break;
 
@@ -340,7 +282,6 @@ export function App() {
           prev[0],
           { ...prev[1], position: pos.detourApproach, status: "EN_ROUTE", activeRoute: "VIA_BRIDGE_BETA" },
         ]);
-        addLog("Rover_2", `✨ 3D Path ribbon SNAPPED across screen to ${scenario.detourName}. Advancing without stopping.`, "info");
         break;
 
       case 4:
@@ -348,7 +289,6 @@ export function App() {
           prev[0],
           { ...prev[1], position: pos.detourEntry, status: "EN_ROUTE" },
         ]);
-        addLog("Rover_2", `Traversing ${scenario.detourName} bypass corridor.`, "info");
         break;
 
       case 5:
@@ -356,7 +296,6 @@ export function App() {
           prev[0],
           { ...prev[1], position: pos.detourExit, status: "EN_ROUTE" },
         ]);
-        addLog("Rover_2", `Cleared ${scenario.detourName}. Approaching destination gateway.`, "info");
         break;
 
       case 6:
@@ -364,7 +303,6 @@ export function App() {
           prev[0],
           { ...prev[1], position: pos.goal, status: "ARRIVED" },
         ]);
-        addLog("Rover_2", `🎉 ARRIVED at ${scenario.hubGoalLabel}! Transit completed with ~${scenario.delayAvoided} saved.`, "info");
         setIsRunning(false);
         break;
 
@@ -372,12 +310,6 @@ export function App() {
         setIsRunning(false);
         break;
     }
-  };
-
-  const handleStepNext = () => {
-    const next = (simStep + 1) % 7;
-    setSimStep(next);
-    executeStep(next);
   };
 
   const handleTogglePlay = () => {
@@ -406,97 +338,68 @@ export function App() {
   }, [isRunning, currentScenarioId]);
 
   return (
-    <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col">
-      <Navbar convexConnected={true} worldLabsCredits={3840} />
-
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-6 flex flex-col gap-6">
-        <JudgeCheatSheet />
-
-        {/* Multi-Scenario Switcher Tabs */}
-        <ScenarioSelector
-          scenarios={SCENARIOS}
-          currentScenarioId={currentScenarioId}
-          onSelectScenario={handleSelectScenario}
-        />
-
-        {/* High-Level Fleet Value Metrics */}
-        <MissionMetrics
-          delayAvoidedSeconds={delayAvoided}
-          stoppagesPrevented={stoppagesPrevented}
-          bridgeAlphaClosed={alphaBlocked}
-          activeReroutes={alphaBlocked ? 1 : 0}
-        />
-
-        {/* Viewport Mode Switcher Header */}
-        <div className="flex items-center justify-between bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
-          <div className="text-xs font-mono text-slate-300 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-            <span>Active Viewport: <strong className="text-white">{viewMode === "3D" ? "3D Photorealistic Digital Twin" : "2D Tactical Schematic"}</strong></span>
+    <div className="min-h-screen bg-[#050811] text-slate-100 flex flex-col selection:bg-cyan-500/30">
+      {/* Clean Minimalist Header */}
+      <header className="px-6 py-3.5 border-b border-slate-800/80 bg-[#070b14]/90 backdrop-blur-md flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-600 p-0.5 flex items-center justify-center">
+            <div className="w-full h-full bg-slate-950 rounded-[6px] flex items-center justify-center">
+              <Radio className="w-4 h-4 text-cyan-400 animate-pulse" />
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setViewMode("3D")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-all ${
-                viewMode === "3D" ? "bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20" : "bg-slate-800 text-slate-300 hover:text-white"
-              }`}
-            >
-              <Box className="w-3.5 h-3.5" />
-              3D WebGL Viewport
-            </button>
-            <button
-              onClick={() => setViewMode("2D")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-all ${
-                viewMode === "2D" ? "bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20" : "bg-slate-800 text-slate-300 hover:text-white"
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              2D Tactical Schematic
-            </button>
+          <div>
+            <h1 className="text-sm font-bold tracking-tight text-white flex items-center gap-2">
+              THE LIVING MAP
+              <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+                World Labs 3D × Convex
+              </span>
+            </h1>
           </div>
         </div>
 
-        {/* Living Map & Controls */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          <div className="lg:col-span-7 flex flex-col gap-6">
-            {viewMode === "3D" ? (
-              <ThreeLivingMap3D
-                robots={robots}
-                bridges={bridges}
-                scenario={scenario}
-                onToggleBridge={handleToggleBridge}
-              />
-            ) : (
-              <LivingMapCanvas
-                robots={robots}
-                bridges={bridges}
-                onToggleBridge={handleToggleBridge}
-                scenario={scenario}
-              />
-            )}
-          </div>
-
-          <div className="lg:col-span-5 flex flex-col gap-6">
-            <SimulationControls
-              isRunning={isRunning}
-              onTogglePlay={handleTogglePlay}
-              onStepNext={handleStepNext}
-              onReset={handleReset}
-              onToggleBridgeAlpha={() => handleToggleBridge("Bridge_Alpha")}
-              bridgeAlphaBlocked={alphaBlocked}
-              robots={robots}
-            />
-
-            <LiveEventFeed logs={logs} />
-          </div>
+        {/* Minimal Scenario Switcher Pills */}
+        <div className="flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-xl border border-slate-800">
+          {Object.values(SCENARIOS).map((sc) => (
+            <button
+              key={sc.id}
+              onClick={() => handleSelectScenario(sc.id)}
+              className={`px-3 py-1 rounded-lg text-xs font-mono font-medium transition-all ${
+                currentScenarioId === sc.id
+                  ? "bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/20"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              {sc.title.split(" ")[0]}
+            </button>
+          ))}
         </div>
 
-        {/* Digital Twin Showcase */}
-        <DigitalTwinViewer worldId={scenario.worldId} />
+        {/* World Labs Link */}
+        <a
+          href={scenario.marbleUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-850 text-indigo-300 border border-slate-800 text-xs font-mono flex items-center gap-1.5 transition-all"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+          <span>Marble 3D Model</span>
+          <ExternalLink className="w-3 h-3 text-slate-500" />
+        </a>
+      </header>
+
+      {/* Main Full-Bleed 3D Stage */}
+      <main className="flex-1 p-4 flex flex-col max-w-[1550px] w-full mx-auto justify-center">
+        <CinematicViewport3D
+          robots={robots}
+          bridges={bridges}
+          scenario={scenario}
+          onToggleBridge={handleToggleBridge}
+          isRunning={isRunning}
+          onTogglePlay={handleTogglePlay}
+          onReset={handleReset}
+          delayAvoided={delayAvoided}
+        />
       </main>
-
-      <footer className="border-t border-slate-900 bg-[#060910] py-4 px-6 text-center text-xs text-slate-500 font-mono">
-        The Living Map — Spatial Intelligence & Generative 3D Hackathon 2026 • World Labs Marble + Isaac Sim + Convex
-      </footer>
     </div>
   );
 }
