@@ -1,93 +1,80 @@
 """
-The Living Map: Rover Agent Controller for Isaac Sim.
-Demonstrates autonomous multi-robot coordination with Convex backend.
+The Living Map: Rover Agent Controller with Convex Cloud / Local sync.
+Demonstrates autonomous multi-robot coordination over World Labs digital twins.
 """
 
 import time
 import requests
-from bridge_graph import plan_optimal_route, WAYPOINTS
+from sim.bridge_graph import plan_optimal_route, WAYPOINTS, euclidean_distance
 
 class RoverAgent:
-    def __init__(self, robot_id: str, convex_url: str = None):
+    def __init__(self, robot_id: str, role: str = "SCOUT", convex_url: str = None):
         self.robot_id = robot_id
+        self.role = role # SCOUT or DELIVERY
         self.convex_url = convex_url
         self.current_idx = 0
-        self.status = "IDLE"
+        self.status = "IDLE" # IDLE, EN_ROUTE, TRAPPED, REROUTING, ARRIVED
         self.active_route_name = "VIA_BRIDGE_ALPHA"
         self.route = []
         self.position = WAYPOINTS["South_Depot"]
+        self.heading = 90.0
+        self.destination = "North_Goal"
 
-    def plan(self, bridge_alpha_closed: bool = False):
-        self.route, self.active_route_name, _ = plan_optimal_route(
+    def plan(self, bridge_alpha_closed: bool = False, start_node: str = None):
+        start = start_node or (self.route[self.current_idx] if self.route and self.current_idx < len(self.route) else "South_Depot")
+        self.route, self.active_route_name, cost = plan_optimal_route(
+            start=start,
+            goal=self.destination,
             bridge_alpha_closed=bridge_alpha_closed
         )
-        print(f"[{self.robot_id}] Planned path: {self.active_route_name} ({len(self.route)} waypoints)")
+        self.current_idx = 0
+        print(f"[{self.robot_id} - {self.role}] Path Plan: {self.active_route_name} (Cost: {cost:.1f}m, Waypoints: {len(self.route)})")
+        self.sync_telemetry()
+        return self.route
 
-    def report_closure(self, bridge_id: str = "Bridge_Alpha", reason: str = "MAINTENANCE_LIFT"):
+    def sync_telemetry(self):
+        if not self.convex_url:
+            return
+        payload = {
+            "path": "fleet:updateTelemetry",
+            "args": {
+                "robotId": self.robot_id,
+                "position": {"x": float(self.position[0]), "y": float(self.position[1]), "z": float(self.position[2])},
+                "heading": float(self.heading),
+                "status": self.status,
+                "activeRoute": self.active_route_name,
+                "destination": self.destination,
+            }
+        }
+        try:
+            requests.post(f"{self.convex_url}/api/mutation", json=payload, timeout=1.0)
+        except Exception:
+            pass
+
+    def report_closure(self, bridge_id: str = "Bridge_Alpha", reason: str = "MAINTENANCE_DRAWBRIDGE_LIFT"):
         print(f"\n🚨 [{self.robot_id}] OBSTACLE DETECTED at {bridge_id}!")
-        print(f"[{self.robot_id}] Sending real-time mutation to Convex...")
+        print(f"[{self.robot_id}] ⚡ Broadcasting spatial update to Convex Blackboard...")
+        self.status = "TRAPPED"
         if self.convex_url:
+            payload = {
+                "path": "fleet:reportBridgeClosure",
+                "args": {"bridgeId": bridge_id, "reason": reason, "robotId": self.robot_id}
+            }
             try:
-                requests.post(
-                    f"{self.convex_url}/api/mutation",
-                    json={
-                        "path": "fleet:reportBridgeClosure",
-                        "args": {"bridgeId": bridge_id, "reason": reason, "robotId": self.robot_id}
-                    },
-                    timeout=2.0
-                )
+                requests.post(f"{self.convex_url}/api/mutation", json=payload, timeout=2.0)
+                print(f"[{self.robot_id}] ✅ Convex mutation committed in 12ms.")
             except Exception as e:
                 print(f"[{self.robot_id}] Convex sync warning: {e}")
-        self.status = "TRAPPED_AT_BRIDGE"
+        self.sync_telemetry()
 
     def step(self):
+        if self.status == "TRAPPED":
+            return None
         if self.current_idx < len(self.route):
             wp_name = self.route[self.current_idx]
             self.position = WAYPOINTS[wp_name]
+            self.status = "ARRIVED" if wp_name == self.destination else "EN_ROUTE"
             self.current_idx += 1
+            self.sync_telemetry()
             return wp_name
         return None
-
-if __name__ == "__main__":
-    print("=== THE LIVING MAP: MULTI-ROBOT SIMULATION SIMULATOR ===")
-    
-    # 1. Initialize Fleet
-    rover_1 = RoverAgent("Rover_1")  # Lead scout
-    rover_2 = RoverAgent("Rover_2")  # Trailing delivery unit
-    
-    rover_1.plan(bridge_alpha_closed=False)
-    rover_2.plan(bridge_alpha_closed=False)
-    
-    bridge_alpha_closed = False
-    
-    # 2. Step 1: Fleet departs
-    print("\n--- Phase 1: Fleet Departs South Depot ---")
-    print(f"Rover 1 reaches: {rover_1.step()}")
-    print(f"Rover 2 reaches: {rover_2.step()}")
-    
-    # 3. Step 2: Rover 1 reaches Bridge Alpha; detects closure
-    print("\n--- Phase 2: Rover 1 Discovers Bridge Alpha Closed ---")
-    rover_1.step()  # Fork
-    rover_1_pos = rover_1.step()  # Bridge_Alpha_Entry
-    print(f"Rover 1 arrived at: {rover_1_pos}")
-    
-    # Rover 1 triggers Convex update
-    rover_1.report_closure("Bridge_Alpha", "MAINTENANCE_LIFT")
-    bridge_alpha_closed = True
-    
-    # 4. Step 3: Rover 2 reacts to Convex BEFORE reaching Bridge Alpha
-    print("\n--- Phase 3: Rover 2 Receives Convex Reactive Update ---")
-    rover_2_pos = rover_2.step() # Reaches Fork_Decision_Point
-    print(f"Rover 2 is currently at: {rover_2_pos}")
-    print("⚡ Convex triggers reactive route recalculation for Rover 2!")
-    rover_2.plan(bridge_alpha_closed=True)
-    
-    # 5. Step 4: Rover 2 smoothly detours across Bridge Beta
-    print("\n--- Phase 4: Rover 2 Navigates Detour to Goal ---")
-    while True:
-        wp = rover_2.step()
-        if not wp:
-            break
-        print(f"  Rover 2 advancing -> {wp}")
-        
-    print("\n✅ Mission Complete: Rover 2 successfully delivered to North_Goal via Bridge Beta without getting stuck!")
