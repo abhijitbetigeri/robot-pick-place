@@ -268,19 +268,38 @@ export const ListingDetailsModal: React.FC<ListingDetailsModalProps> = ({
               </div>
             </div>
 
-            {/* Photo Gallery Thumbnail Row */}
+            {/* Multi-View Photo Package (Frontal, Kitchen, Bedroom, Bathroom) */}
             {currentListing.photos.length > 0 && (
               <div className="pt-2">
-                <span className="text-[10px] text-slate-400 block mb-1.5">Property Imagery:</span>
-                <div className="grid grid-cols-3 gap-2">
-                  {currentListing.photos.slice(0, 3).map((photo, idx) => (
-                    <img
-                      key={idx}
-                      src={photo}
-                      alt={`Listing Photo ${idx + 1}`}
-                      className="w-full h-24 object-cover rounded-lg border border-slate-800"
-                    />
-                  ))}
+                <span className="text-[10px] text-slate-400 block mb-1.5 font-bold uppercase tracking-wider">
+                  Verified Multi-View RGB Property Photos ({currentListing.photos.length} Cameras):
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  {currentListing.photos.map((photo, idx) => {
+                    const label =
+                      idx === 0
+                        ? "Frontal Exterior"
+                        : idx === 1
+                        ? "Kitchen & Dining"
+                        : idx === 2
+                        ? "Master Bedroom"
+                        : idx === 3
+                        ? "Bathroom"
+                        : `View ${idx + 1}`;
+                    return (
+                      <div key={idx} className="relative rounded-lg overflow-hidden border border-slate-800 group">
+                        <img
+                          src={photo}
+                          alt={label}
+                          className="w-full h-28 object-cover group-hover:scale-105 transition-all duration-300"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 pointer-events-none" />
+                        <span className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded bg-slate-950/80 backdrop-blur-md text-[9px] font-bold text-cyan-300 uppercase">
+                          {label}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
