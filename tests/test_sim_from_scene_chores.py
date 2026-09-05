@@ -352,6 +352,27 @@ def test_missing_mesh_scene_still_compiles(bedroom, tmp_path, monkeypatch):
     mujoco.MjModel.from_xml_string(xml, {})   # raises if the model is invalid
 
 
+def test_generated_mjcf_is_unique_per_run(tmp_path):
+    """
+    Non-vacuity: two concurrent mesh-backed scene runs must not share the same
+    model path, because MuJoCo reads mesh-relative XML from disk.
+    """
+    first = S._write_tmp("<mujoco model='first'/>", tmp_path)
+    second = S._write_tmp("<mujoco model='second'/>", tmp_path)
+    try:
+        assert first != second
+        assert first.read_text() == "<mujoco model='first'/>"
+        assert second.read_text() == "<mujoco model='second'/>"
+    finally:
+        first.unlink(missing_ok=True)
+        second.unlink(missing_ok=True)
+
+
+def test_file_backed_model_load_cleans_up_generated_mjcf(tmp_path):
+    S._load_model("<mujoco model='cleanup'/>", tmp_path, needs_files=True)
+    assert list(tmp_path.glob("_scene_generated*.xml")) == []
+
+
 # ---------------------------------------------------------------------------
 # Where the artifacts land
 # ---------------------------------------------------------------------------

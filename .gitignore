@@ -40,7 +40,7 @@ out/
 .idea/
 
 # generated MJCF scratch
-public/assets/sim/_scene_generated.xml
+public/assets/sim/_scene_generated*.xml
 # generated browser-replay trajectories from sim_from_scene.py
 public/assets/tasks/scene_*_traj.json
 # regenerate with scripts/marble_to_mjcf.py

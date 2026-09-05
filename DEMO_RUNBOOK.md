@@ -192,7 +192,30 @@ the offline demo** and will fail with `convex run failed` on a machine without
 one. The bundled fixture in section 1 exists precisely so the demo never depends
 on it.
 
-The in-app "run this chore" panel and its `/api/run` bridge live on the
-`feat/run-chore-ui` branch. When those merge, the chore selector is passed
-through as a `chore` field on the POST body, and the artifacts land under the
-stems in the table above.
+### The in-app panel
+
+With a Convex deployment configured, the studio can run either chore itself.
+Start the bridge alongside the dev server:
+
+```bash
+.venv/bin/python scripts/sim_server.py      # POST /api/run, port 8765
+npm run dev                                 # the studio proxies /api to it
+```
+
+Share a scene, pick **Tidy** or **Book**, and press Run. Tidy is preselected —
+it is the one with the machine-checked verdict, and the panel breaks that
+verdict into its three geometric parts (over basket, below rim, at rest) rather
+than showing a single tick. Artifacts land under the stems in the table above,
+so a tidy run plays `scene_<id>_tidy.mp4`.
+
+The same thing without a browser, which is the honest fallback if Convex is not
+configured:
+
+```bash
+curl -s localhost:8765/api/run -H 'Content-Type: application/json' \
+  -d '{"sceneFile":"scripts/fixtures/scene_offline.json","chore":"tidy"}'
+```
+
+`chore` accepts `book` or `tidy` and nothing else — anything unknown is refused
+before a simulation is launched. Omitting it runs `book`, so a caller written
+before chore selection existed keeps working.

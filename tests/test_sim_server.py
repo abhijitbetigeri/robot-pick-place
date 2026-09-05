@@ -24,9 +24,14 @@ FIXTURE = "scripts/fixtures/scene_offline.json"
 
 
 @pytest.fixture(scope="module")
-def offline_run() -> dict:
+def offline_run(tmp_path_factory) -> dict:
     """One real rollout, shared by the assertions that read it."""
-    return sim_server.run_task(share_id=None, scene_file=FIXTURE, marble=None)
+    outdir = tmp_path_factory.mktemp("sim_server_tasks")
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setattr(sim_server, "TASKS_REL", outdir)
+        result = sim_server.run_task(share_id=None, scene_file=FIXTURE, marble=None)
+    result["_outdir"] = outdir
+    return result
 
 
 def test_run_reports_success_and_artifact_urls(offline_run: dict) -> None:
@@ -38,11 +43,23 @@ def test_run_reports_success_and_artifact_urls(offline_run: dict) -> None:
 
 
 def test_artifacts_exist_on_disk(offline_run: dict) -> None:
-    """The URLs the UI is handed must resolve to files Vite can serve."""
-    for url in (offline_run["traceUrl"], offline_run["videoUrl"]):
-        served = REPO_ROOT / "public" / url.lstrip("/")
-        assert served.exists(), f"{url} does not exist at {served}"
-        assert served.stat().st_size > 0
+    """The redirected rollout writes every expected artifact outside fixtures."""
+    trace = offline_run["_outdir"] / Path(offline_run["traceUrl"]).name
+    video = offline_run["_outdir"] / Path(offline_run["videoUrl"]).name
+    trajectory = offline_run["_outdir"] / "scene_offline_traj.json"
+    for artifact in (trace, video, trajectory):
+        assert artifact.exists(), f"{artifact} does not exist"
+        assert artifact.stat().st_size > 0
+
+
+def test_task_asset_urls_map_to_public_directory() -> None:
+    url = sim_server._task_url("scene_offline", "mp4")
+
+    assert url == "/assets/tasks/scene_offline.mp4"
+    assert (
+        sim_server._public_asset_path(url)
+        == REPO_ROOT / "public/assets/tasks/scene_offline.mp4"
+    )
 
 
 def test_the_robot_actually_moved_the_object(offline_run: dict) -> None:
@@ -71,7 +88,7 @@ def test_the_robot_actually_moved_the_object(offline_run: dict) -> None:
 
 def test_success_predicate_is_reported_not_assumed(offline_run: dict) -> None:
     """The server must echo the simulator's verdict, not synthesise one."""
-    trace_file = REPO_ROOT / "public" / offline_run["traceUrl"].lstrip("/")
+    trace_file = offline_run["_outdir"] / Path(offline_run["traceUrl"]).name
     on_disk = json.loads(trace_file.read_text())
     assert offline_run["success"] == on_disk["success"]
 
@@ -103,13 +120,10 @@ def test_scene_without_two_surfaces_surfaces_the_scripts_reason(tmp_path: Path) 
             }
         ],
     }
-    rel = Path("scripts/fixtures/_test_thin_scene.json")
-    target = REPO_ROOT / rel
+    target = tmp_path / "thin_scene.json"
     target.write_text(json.dumps(thin))
-    try:
-        result = sim_server.run_task(share_id=None, scene_file=str(rel), marble=None)
-    finally:
-        target.unlink(missing_ok=True)
+
+    result = sim_server.run_task(share_id=None, scene_file=str(target), marble=None)
 
     assert result["ok"] is False
     assert "at least 2 objects" in result["error"]

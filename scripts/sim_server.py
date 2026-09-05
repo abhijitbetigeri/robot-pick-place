@@ -13,6 +13,7 @@ Deliberately stdlib-only: the judge path must not acquire a web framework, and
   POST /api/run    {"shareId": "demo"}            scene from Convex
                    {"sceneFile": "scene.json"}    scene from disk (offline)
                    optional "marble": "sf_penthouse_loft"
+                   optional "chore": "book" | "tidy"  (default book)
     -> 200 {"ok": true,  "success": bool, "videoUrl": ..., "traceUrl": ...,
             "trace": {...}, "durationSec": float, "stdout": "..."}
     -> 200 {"ok": false, "error": "...", "exitCode": int, "stdout", "stderr"}
@@ -40,11 +41,24 @@ from pathlib import Path
 # runs would interleave frames into each other's files. One at a time.
 _RUN_LOCK = threading.Lock()
 
+# The chores sim_from_scene.py offers. Validated here rather than trusted,
+# because this value is chosen in a browser and ends up in an argv.
+CHORES = ("book", "tidy")
+
 MAX_BODY_BYTES = 64 * 1024
 RUN_TIMEOUT_SEC = 300
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 TASKS_REL = Path("public/assets/tasks")
+TASKS_URL_PREFIX = "/assets/tasks"
+
+
+def _task_url(stem: str, suffix: str) -> str:
+    return f"{TASKS_URL_PREFIX}/{stem}.{suffix}"
+
+
+def _public_asset_path(url: str) -> Path:
+    return REPO_ROOT / "public" / url.lstrip("/")
 
 
 def _python_executable() -> str:
@@ -53,25 +67,42 @@ def _python_executable() -> str:
     return str(venv) if venv.exists() else sys.executable
 
 
-def _stem_for(share_id: str | None, scene_file: str | None) -> str:
+def _chore_suffix(chore: str | None) -> str:
+    """sim_from_scene keeps the bare stem for its default chore."""
+    return "" if chore in (None, "book") else f"_{chore}"
+
+
+def _stem_for(share_id: str | None, scene_file: str | None,
+              chore: str | None = None) -> str:
     """Mirror sim_from_scene.py's naming so we can find what it wrote.
 
     That script derives its stem from the scene's own shareId
-    (`scene_{shareId or 'task'}`), which we only know for certain after the run.
-    This is the prediction; `_newest_matching` corrects it against the tree.
+    (`scene_{shareId or 'task'}`) plus the chore, which we only know for certain
+    after the run. This is the prediction; `_newest_matching` corrects it
+    against the tree.
     """
+    suffix = _chore_suffix(chore)
     if share_id:
-        return f"scene_{share_id}"
+        return f"scene_{share_id}{suffix}"
     if scene_file:
         try:
             data = json.loads((REPO_ROOT / scene_file).read_text())
-            return f"scene_{data.get('shareId', 'task')}"
+            return f"scene_{data.get('shareId', 'task')}{suffix}"
         except (OSError, ValueError):
-            return "scene_task"
-    return "scene_task"
+            return f"scene_task{suffix}"
+    return f"scene_task{suffix}"
 
 
-def _newest_matching(outdir: Path, since: float) -> str | None:
+def _chore_of(stem: str) -> str:
+    """Which chore wrote a file with this stem."""
+    for chore in CHORES:
+        if chore != "book" and stem.endswith(f"_{chore}"):
+            return chore
+    return "book"
+
+
+def _newest_matching(outdir: Path, since: float,
+                    chore: str | None = None) -> str | None:
     """The stem of the newest trace written strictly after `since`, if any.
 
     Trusting the filesystem over our prediction means a scene whose embedded
@@ -82,9 +113,15 @@ def _newest_matching(outdir: Path, since: float) -> str | None:
     which reported a failed run as a success whenever the two landed inside the
     same second. Only a file this run actually wrote may be claimed by it.
     """
+    suffix = _chore_suffix(chore)
     candidates = [
-        p for p in outdir.glob("scene_*.json")
+        p for p in outdir.glob(f"scene_*{suffix}.json")
         if p.stat().st_mtime > since and not p.stem.endswith("_traj")
+        # The chores share a directory and a prefix, so a suffix-less glob also
+        # matches the other chore's files. Without this a tidy run that wrote
+        # nothing could claim a book artifact and show the judge the wrong
+        # video under the right label.
+        and _chore_of(p.stem) == (chore or "book")
     ]
     if not candidates:
         return None
@@ -92,10 +129,18 @@ def _newest_matching(outdir: Path, since: float) -> str | None:
 
 
 def run_task(share_id: str | None, scene_file: str | None,
-             marble: str | None) -> dict:
+             marble: str | None, chore: str | None = None) -> dict:
     """Run one robot task and describe where its artifacts landed."""
     if not share_id and not scene_file:
         return {"ok": False, "error": "pass shareId or sceneFile"}
+
+    # Validate before spawning anything: this value is chosen in a browser and
+    # becomes an argv element, and an unknown chore should cost a rejection
+    # rather than a MuJoCo rollout.
+    if chore is not None and chore not in CHORES:
+        return {"ok": False,
+                "error": f"unknown chore {chore!r}; expected one of "
+                         + " or ".join(CHORES)}
 
     cmd = [_python_executable(), "scripts/sim_from_scene.py"]
     if share_id:
@@ -104,9 +149,15 @@ def run_task(share_id: str | None, scene_file: str | None,
         cmd += ["--scene-file", scene_file]
     if marble:
         cmd += ["--marble", marble]
+    if chore:
+        cmd += ["--chore", chore]
 
     outdir = REPO_ROOT / TASKS_REL
     outdir.mkdir(parents=True, exist_ok=True)
+    # Say where the artifacts go rather than trusting the script's default to
+    # agree with TASKS_REL. It is also the seam that lets a test point the
+    # whole pipeline at a temp directory instead of the tracked assets.
+    cmd += ["--outdir", str(outdir)]
 
     started = time.time()
     try:
@@ -122,7 +173,8 @@ def run_task(share_id: str | None, scene_file: str | None,
                 "command": " ".join(cmd)}
     duration = round(time.time() - started, 1)
 
-    stem = _newest_matching(outdir, started) or _stem_for(share_id, scene_file)
+    stem = (_newest_matching(outdir, started, chore)
+            or _stem_for(share_id, scene_file, chore))
     trace_path = outdir / f"{stem}.json"
     video_path = outdir / f"{stem}.mp4"
 
@@ -156,11 +208,12 @@ def run_task(share_id: str | None, scene_file: str | None,
         "exitCode": proc.returncode,
         # Same freshness rule as the trace: never hand back a video from
         # an earlier run alongside this run's results.
-        "videoUrl": (f"/assets/tasks/{stem}.mp4"
+        "videoUrl": (_task_url(stem, "mp4")
                      if video_path.exists() and video_path.stat().st_mtime > started
                      else None),
-        "traceUrl": f"/assets/tasks/{stem}.json",
+        "traceUrl": _task_url(stem, "json"),
         "trace": trace,
+        "chore": trace.get("chore", chore or "book"),
         "durationSec": duration,
         "stdout": proc.stdout[-4000:],
     }
@@ -219,6 +272,7 @@ class Handler(BaseHTTPRequestHandler):
                 share_id=req.get("shareId"),
                 scene_file=req.get("sceneFile"),
                 marble=req.get("marble"),
+                chore=req.get("chore"),
             )
         self._send(result)
 
@@ -240,7 +294,8 @@ def main() -> int:
     print(f"sim server on http://{args.host}:{args.port}")
     print(f"  repo   {REPO_ROOT}")
     print(f"  python {_python_executable()}")
-    print("  POST /api/run  {\"shareId\": \"...\"} | {\"sceneFile\": \"...\"}")
+    print("  POST /api/run  {\"shareId\": \"...\"} | {\"sceneFile\": \"...\"}"
+          "  [+ \"chore\": \"book\"|\"tidy\"]")
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

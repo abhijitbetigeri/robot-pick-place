@@ -31,6 +31,7 @@ import argparse
 import json
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
@@ -828,8 +829,7 @@ def main() -> int:
     # <mesh file=...> resolves relative to the model file, so whenever any mesh
     # is referenced the XML has to live beside public/assets/sim/.
     needs_files = bool(args.marble) or "<mesh " in xml
-    model = (mujoco.MjModel.from_xml_path(str(_write_tmp(xml, sim_dir)))
-             if needs_files else mujoco.MjModel.from_xml_string(xml, {}))
+    model = _load_model(xml, sim_dir, needs_files)
     data = mujoco.MjData(model)
     eq_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_EQUALITY, "grasp")
 
@@ -942,12 +942,30 @@ def main() -> int:
     return 0 if ok else 1
 
 
+def _load_model(xml: str, sim_dir: Path, needs_files: bool):
+    if not needs_files:
+        return mujoco.MjModel.from_xml_string(xml, {})
+
+    path = _write_tmp(xml, sim_dir)
+    try:
+        return mujoco.MjModel.from_xml_path(str(path))
+    finally:
+        path.unlink(missing_ok=True)
+
+
 def _write_tmp(xml: str, sim_dir: Path) -> Path:
     """Meshes resolve relative to the model file, so write it beside them."""
     sim_dir.mkdir(parents=True, exist_ok=True)
-    p = sim_dir / "_scene_generated.xml"
-    p.write_text(xml)
-    return p
+    with tempfile.NamedTemporaryFile(
+        "w",
+        encoding="utf-8",
+        dir=sim_dir,
+        prefix="_scene_generated_",
+        suffix=".xml",
+        delete=False,
+    ) as handle:
+        handle.write(xml)
+        return Path(handle.name)
 
 
 if __name__ == "__main__":
