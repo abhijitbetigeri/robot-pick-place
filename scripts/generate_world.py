@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Generate 3D worlds from images/panoramas using the World Labs Marble API.
-Exports: Gaussian Splatting (.ply / .spz) and Collision Mesh (.glb).
+Exports: Gaussian Splatting (.spz / .ply) and Collision Mesh (.glb).
 """
 
 import argparse
@@ -124,7 +124,7 @@ def download_assets(world_data: dict, out_dir: str = "assets"):
         if not url:
             return
         target_path = os.path.join(out_dir, target_filename)
-        print(f"📥 Downloading {description} from {url[:40]}... -> {target_path}")
+        print(f"📥 Downloading {description} from {url[:50]}... -> {target_path}")
         try:
             r = requests.get(url, stream=True, timeout=60)
             if r.status_code == 200:
@@ -138,21 +138,24 @@ def download_assets(world_data: dict, out_dir: str = "assets"):
         except Exception as e:
             print(f"⚠️ Error downloading {description}: {e}")
 
-    # Gaussian splats
-    ply_url = assets.get("gaussian_splats_ply_url") or assets.get("splats_url") or assets.get("ply_url")
-    fetch_file(ply_url, "scene_splats.ply", "Gaussian Splats (PLY)")
-    
-    # SPZ compact format
-    spz_url = assets.get("spz_url") or assets.get("splats_spz_url")
-    fetch_file(spz_url, "scene_splats.spz", "Compact Splats (SPZ)")
-
-    # Collider mesh GLB
-    glb_url = assets.get("collider_mesh_glb_url") or assets.get("mesh_url") or assets.get("glb_url")
+    # 1. Collider mesh GLB
+    mesh_obj = assets.get("mesh") or {}
+    glb_url = mesh_obj.get("collider_mesh_url") or assets.get("collider_mesh_glb_url")
     fetch_file(glb_url, "scene_collider.glb", "Collider Mesh (GLB)")
 
-    # Imagery / Thumbnail
-    thumb_url = assets.get("thumbnail_url") or assets.get("preview_image_url")
-    fetch_file(thumb_url, "scene_preview.jpg", "World Thumbnail Preview")
+    # 2. Gaussian Splats SPZ formats
+    splats_obj = assets.get("splats") or {}
+    spz_urls = splats_obj.get("spz_urls") or {}
+    spz_full = spz_urls.get("full_res") or spz_urls.get("500k")
+    fetch_file(spz_full, "scene_splats.spz", "Compact Gaussian Splats (SPZ)")
+
+    # 3. Imagery / Panorama & Thumbnail
+    imagery_obj = assets.get("imagery") or {}
+    pano_url = imagery_obj.get("pano_url")
+    fetch_file(pano_url, "scene_pano.png", "360 Equirectangular Panorama")
+
+    thumb_url = assets.get("thumbnail_url")
+    fetch_file(thumb_url, "scene_preview.webp", "World Thumbnail Preview")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate 3D Worlds via World Labs Marble API")
@@ -161,13 +164,19 @@ if __name__ == "__main__":
     parser.add_argument("--name", type=str, default="SF_Mission_Creek_Bridges")
     parser.add_argument("--out-dir", type=str, default="assets")
     parser.add_argument("--op-id", type=str, default=None, help="Poll existing operation ID")
+    parser.add_argument("--download-existing", action="store_true", help="Download assets from assets/world_meta.json")
     
     args = parser.parse_args()
     
-    if args.op_id:
+    if args.download_existing and os.path.exists("assets/world_meta.json"):
+        with open("assets/world_meta.json") as f:
+            world = json.load(f)
+        download_assets(world, args.out_dir)
+    elif args.op_id:
         world = poll_operation(args.op_id)
+        if world:
+            download_assets(world, args.out_dir)
     else:
         world = generate_world(args.prompt, args.image_url, args.name)
-        
-    if world:
-        download_assets(world, args.out_dir)
+        if world:
+            download_assets(world, args.out_dir)
