@@ -1,53 +1,96 @@
-# Spatial Intelligence & Generative 3D Platform
+# Real Estate to MuJoCo & NVIDIA Isaac Sim Digital Twin Pipeline
 
-A high-performance WebGL spatial computing platform combining generative 3D reconstruction, robotics manipulation digital twins, and large-scale urban simulation.
-
----
-
-## 🚀 Active Applications
-
-### 1. 🏢 Datacenter Robotics Digital Twin (`src/datacenter/`)
-- **EIA-310 CAD Precision Rack Visualizer:** High-fidelity 42U server racks, blade chassis, patch panels, power distribution units (PDUs), and fiber optic transceivers.
-- **Automated Robotic Manipulator:** Inverse kinematics controller for robotic arms executing automated transceiver insertion, cable routing, and drive servicing.
-- **Roboflow Computer Vision Overlay:** Real-time bounding box detection, port status verification (100GbE QSFP28 / SFP+), optical power levels, and telemetry inspection.
-- **Port Inspector Panel:** Interactive debugging of port health, link errors, CRC errors, and maintenance workflows.
-
-### 2. ⚡ IRL Tron: San Francisco 5KM (`src/tron/`)
-- **5KM Open World San Francisco Grid:** Procedural procedural urban generation based on real SF coordinates (Market St, Embarcadero, China Basin, SoMa).
-- **Physics Engine & Lightcycle Mechanics:** Real-time vehicle physics, acceleration curves, drifting, and collision detection.
-- **Continuous Ribbon Trail System:** GPU-accelerated neon light walls with dynamic raycasting and elimination boundaries.
-- **Autonomous Bot AI & Cyber HUD:** Enemy bot pathfinding, real-time speedometer, minimap radar, and spatial audio engine.
+An end-to-end generative spatial pipeline that transforms real estate listings and multi-view property imagery into interactive 3D digital twins, stages domestic robotics fixtures and furniture, and compiles directly into **NVIDIA Isaac Sim** and **MuJoCo MJCF** physics simulation environments.
 
 ---
 
-## 🗄️ Archived Projects
+## 🏗️ Architecture & Pipeline Overview
 
-### 🌉 The Living Map (`archived/living-map/`)
-- **Multi-Robot Dynamic Spatial Memory:** Real-time distributed routing over World Labs Marble generative 3D worlds.
-- **Components:** Isaac Sim stage assembly (`sim/`), Convex blackboard reactive mutations (`convex/`), and World Labs Marble API pipeline (`scripts/`).
-- **Archive Documentation:** See [`archived/living-map/HANDOFF.md`](archived/living-map/HANDOFF.md) and [`archived/living-map/README_living_map.md`](archived/living-map/README_living_map.md).
+```
+ ┌───────────────────────────┐
+ │ Real Estate Source Data   │
+ │ • Redfin / Zillow URLs    │
+ │ • Multi-View Benchmark    │
+ │ • Property Photos / Tours │
+ └─────────────┬─────────────┘
+               │
+               ▼
+ ┌───────────────────────────┐
+ │ 3D Reconstruction Engine  │
+ │ • World Labs Marble       │ ──► Generative 3D Mesh / Gaussian Splats
+ │ • mint.gg / Luma API      │
+ └─────────────┬─────────────┘
+               │
+               ▼
+ ┌──────────────────────────────────────────────────────────┐
+ │ Interactive 3D Spatial Staging Studio                    │
+ │ • Three.js WebGL / Metric Floorplan Engine               │
+ │ • Pre-calibrated Household Asset Library (22+ items)     │
+ │ • Transform Gizmos (Translate, Rotate, Scale, Floor Snap)│
+ │ • First-Person Walkthrough & Collision Geom Inspection   │
+ └─────────────┬──────────────────────────────┬─────────────┘
+               │                              │
+               ▼                              ▼
+ ┌───────────────────────────┐  ┌───────────────────────────┐
+ │ MuJoCo MJCF Exporter      │  │ NVIDIA Isaac Sim Exporter │
+ │ • XML Compiler & Kinematics│  │ • Omniverse Python API    │
+ │ • Contact & Friction Tensors│ │ • PhysX Dynamic Primitives│
+ │ • Actuators & RGB-D Sensors│ │ • Semantics & USD Mapping │
+ └───────────────────────────┘  └───────────────────────────┘
+```
 
 ---
 
-## 🛠️ Quickstart
+## 🌟 Key Capabilities
+
+### 1. 🏡 Real Estate Ingestion & Multi-View Datasets
+- **Live Listing Parser:** Synthesizes metric bounding rooms, sqft, bedroom/bath counts, and photos from Redfin / Zillow URLs.
+- **Ahmed & Moustafa Dataset Integration:** Direct loader for the 535-house benchmark dataset (`Houses-dataset`), featuring multi-angle RGB photography (Frontal, Kitchen, Bedroom, Bathroom).
+- **World Labs Marble & mint.gg Integration:** Ingests reconstructed 3D meshes and Gaussian Splat environments into the spatial stage.
+
+### 2. 🛋️ Pre-Calibrated Household & Robotics Asset Library
+- **22+ Pre-Generated Assets with Physics Calibration:**
+  - **Living Room:** Plush Sectionals, Calacatta Marble Tables, 75" OLED Consoles, Eames Armchairs, Hardwood Bookshelves, Potted Figs.
+  - **Kitchen & Dining:** Waterfall Marble Islands, Walnut Dining Sets, French-Door Smart Fridges, Microwave Stations, Step Bins.
+  - **Bedroom & Office:** Platform King Beds, Nightstands, Dual-Monitor Executive Desks, Ergonomic Swivel Chairs.
+  - **Lighting & Decor:** Brushed Brass Arc Floor Lamps, Ceramic Table Lamps.
+  - **Service Robotics:** Hello Robot Stretch RE1 mobile manipulator, Unitree Go2 agile quadruped, Inductive Ground Charging Docks, Mobile Utility Carts.
+
+### 3. 🎮 Scene Manipulation & Spatial Navigation
+- **3D Transform Gizmos:** Translate (`W`), Rotate (`E`), Scale (`R`), Snap to Floor (`F`), Duplicate (`Ctrl+D`), Delete (`Del`).
+- **Interactive View Modes:**
+  - **3D Orbit:** OrbitControls around the staged digital twin.
+  - **First-Person Walkthrough (WASD):** Eye-level camera height (1.65m) for interior exploration.
+  - **2D Floorplan Blueprint:** 1-meter metric architectural overview.
+  - **Physics Collision Geoms:** Bounding primitive wireframe inspection (boxes, cylinders, spheres).
+- **Lighting Presets:** Daylight, Golden Hour Sunset, and Evening Architectural Ambient.
+
+### 4. 🤖 Physics Simulator Exporters
+- **MuJoCo MJCF (`.xml`):** Generates valid MJCF XML with `<compiler>`, `<worldbody>`, `<freejoint>`, inertial mass, friction tensors (`[slide, roll, spin]`), and Stretch RE1 joint actuators.
+- **NVIDIA Isaac Sim (`.py`):** Generates standalone Omniverse Python scripts with PhysX physics materials, `DynamicCuboid` / `DynamicCylinder` prims, and semantic labeling.
+
+---
+
+## 🚀 Quickstart
 
 ### Prerequisites
 - Node.js 18+
+- Python 3.10+
 - npm
 
-### Development Server
+### Installation & Run
 ```bash
-# Install dependencies
+# 1. Install frontend dependencies
 npm install
 
-# Run development server
+# 2. Run the interactive development server
 npm run dev
 
-# Build for production
+# 3. Build for production
 npm run build
 ```
 
-The app will be available on `http://localhost:3001` or via your configured Tailscale endpoint.
+The studio will be available on `http://localhost:3001` (or via your configured Tailscale endpoint).
 
 ---
 
@@ -56,24 +99,25 @@ The app will be available on `http://localhost:3001` or via your configured Tail
 ```
 .
 ├── src/
-│   ├── datacenter/            # Datacenter Robotics Digital Twin
-│   │   ├── components/        # Viewport, Rack Builders, Roboflow CV, Port Inspector
-│   │   ├── data/              # 42U Rack Specifications & Telemetry
-│   │   ├── robotics/          # Manipulator Inverse Kinematics & Servicing
-│   │   ├── DatacenterApp.tsx  # Main Datacenter application entry
-│   │   └── types.ts           # Datacenter & Robotics types
-│   ├── tron/                  # IRL Tron San Francisco 5KM
-│   │   ├── components/        # Canvas, HUD, Minimap, Speedometer
-│   │   ├── game/              # Physics, Lightcycle, Trail, Bot AI, City Generator
-│   │   ├── data/              # SF Road Network & Landmarks
-│   │   ├── TronApp.tsx        # Main Tron application entry
-│   │   └── types.ts           # Game & Lightcycle types
-│   ├── App.tsx                # Master Mode Switcher & Viewport Host
-│   ├── main.tsx               # React DOM root entry
-│   └── index.css              # Tailwind CSS styles
-├── public/                    # Static textures & previews
-├── archived/                  # Archived previous hackathon projects
-│   └── living-map/            # The Living Map (Bridges, Isaac Sim, Convex, Marble)
+│   ├── realestate/            # Real Estate Digital Twin Studio
+│   │   ├── components/        # Viewport3D, AssetDrawer, PropertiesPanel, ExportModal, ListingModal
+│   │   ├── data/              # Furniture Catalog, Sample Listings, Houses Dataset
+│   │   ├── exporters/         # MuJoCo MJCF & Isaac Sim Python generators
+│   │   ├── types.ts           # Spatial, Physics, and Listing types
+│   │   └── RealEstateApp.tsx  # Main Real Estate Studio layout
+│   ├── App.tsx                # Master application root
+│   ├── main.tsx               # React DOM entry
+│   └── index.css              # Global styles
+├── scripts/
+│   ├── process_houses_dataset.py # Extracts Houses-dataset photos & metadata
+│   ├── export_mujoco.py          # Python CLI exporter for MuJoCo MJCF
+│   ├── export_isaac_sim.py       # Python CLI exporter for NVIDIA Isaac Sim
+│   └── ingest_realestate.py      # Real estate URL & Marble 3D ingestion CLI
+├── public/                    # Static assets & processed house imagery
+├── archived/                  # Previous prototypes and hackathon archives
+│   ├── datacenter/            # Archived Datacenter digital twin
+│   ├── tron/                  # Archived IRL Tron prototype
+│   └── living-map/            # Archived Living Map project
 ├── package.json
 ├── tsconfig.json
 ├── tailwind.config.js
