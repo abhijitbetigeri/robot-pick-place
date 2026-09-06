@@ -16,8 +16,7 @@ of them, so the questions worth asking are about telling them apart:
 The cheap questions are answered by inspecting the command that would be built.
 The expensive ones run one real rollout each, against the bundled offline scene
 - no network, no Convex. Runs are sequential on purpose: concurrent runs share
-`public/assets/sim/_scene_generated.xml` (sihax26-s4z) and must not be
-exercised here until that lands.
+renderer resources and are better exercised outside this module.
 
 Every real run is pointed at a temp directory. Fixtures under public/ are
 read-only inputs: a test suite that writes there leaves the worktree dirty and

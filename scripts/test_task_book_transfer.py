@@ -29,6 +29,14 @@ def valid_summary() -> dict:
         "end": {"x": 4.2, "y": -1.2, "z": 0.852, "room": "Bedroom 2", "shelf": "B"},
         "distance_travelled_m": 8.74,
         "crossed_rooms": True,
+        "predicate": {
+            "on_target_surface": True,
+            "at_rest": True,
+            "speed": 0.0,
+            "released": True,
+            "weld_inactive": True,
+            "success": True,
+        },
         "success": True,
         "phases": phases,
     }
@@ -91,6 +99,95 @@ class BookTransferSmokeTest(unittest.TestCase):
             with self.assertRaisesRegex(task_book_transfer.SummaryValidationError, "predates"):
                 task_book_transfer.validate_summary(path, started_at_ns=started_ns)
 
+    def test_success_predicate_rejects_active_weld_at_target(self):
+        verdict = task_book_transfer.book_success_predicate(
+            task_book_transfer.book_rest_point(task_book_transfer.SHELF_B),
+            [0.0, 0.0, 0.0],
+            weld_active=True,
+            release_seen=True,
+        )
+
+        self.assertFalse(verdict["success"])
+        self.assertFalse(verdict["weld_inactive"])
+        self.assertFalse(verdict["released"])
+        self.assertTrue(verdict["on_target_surface"])
+        self.assertTrue(verdict["at_rest"])
+
+    def test_success_predicate_rejects_missing_release_phase(self):
+        verdict = task_book_transfer.book_success_predicate(
+            task_book_transfer.book_rest_point(task_book_transfer.SHELF_B),
+            [0.0, 0.0, 0.0],
+            weld_active=False,
+            release_seen=False,
+        )
+
+        self.assertFalse(verdict["success"])
+        self.assertTrue(verdict["weld_inactive"])
+        self.assertFalse(verdict["released"])
+
+    def test_success_predicate_rejects_motion_independently(self):
+        verdict = task_book_transfer.book_success_predicate(
+            task_book_transfer.book_rest_point(task_book_transfer.SHELF_B),
+            [0.0, 0.0, 0.051],
+            weld_active=False,
+            release_seen=True,
+        )
+
+        self.assertFalse(verdict["success"])
+        self.assertFalse(verdict["at_rest"])
+        self.assertTrue(verdict["released"])
+        self.assertTrue(verdict["on_target_surface"])
+
+    def test_success_predicate_rejects_book_above_or_below_target_surface(self):
+        x, y, z = task_book_transfer.book_rest_point(task_book_transfer.SHELF_B)
+        for bad_z in (z - 0.09, z + 0.09):
+            with self.subTest(z=bad_z):
+                verdict = task_book_transfer.book_success_predicate(
+                    [x, y, bad_z],
+                    [0.0, 0.0, 0.0],
+                    weld_active=False,
+                    release_seen=True,
+                )
+
+                self.assertFalse(verdict["success"])
+                self.assertFalse(verdict["on_target_surface"])
+                self.assertTrue(verdict["at_rest"])
+                self.assertTrue(verdict["released"])
+
+    def test_success_predicate_rejects_book_off_target_surface_xy(self):
+        x, y, z = task_book_transfer.book_rest_point(task_book_transfer.SHELF_B)
+        verdict = task_book_transfer.book_success_predicate(
+            [x + 0.5, y, z],
+            [0.0, 0.0, 0.0],
+            weld_active=False,
+            release_seen=True,
+        )
+
+        self.assertFalse(verdict["success"])
+        self.assertFalse(verdict["on_target_surface"])
+        self.assertTrue(verdict["at_rest"])
+        self.assertTrue(verdict["released"])
+
+    def test_success_predicate_accepts_released_resting_book_on_target(self):
+        verdict = task_book_transfer.book_success_predicate(
+            task_book_transfer.book_rest_point(task_book_transfer.SHELF_B),
+            [0.0, 0.0, 0.0],
+            weld_active=False,
+            release_seen=True,
+        )
+
+        self.assertEqual(
+            verdict,
+            {
+                "on_target_surface": True,
+                "at_rest": True,
+                "speed": 0.0,
+                "released": True,
+                "weld_inactive": True,
+                "success": True,
+            },
+        )
+
     def test_smoke_fails_when_task_execution_is_stubbed(self):
         with tempfile.TemporaryDirectory() as tmp:
             outdir = Path(tmp)
@@ -118,6 +215,10 @@ class BookTransferSmokeTest(unittest.TestCase):
             self.assertEqual(summary["end"]["shelf"], "B")
             self.assertTrue(summary["crossed_rooms"])
             self.assertTrue(summary["success"])
+            self.assertTrue(summary["predicate"]["released"])
+            self.assertTrue(summary["predicate"]["weld_inactive"])
+            self.assertTrue(summary["predicate"]["at_rest"])
+            self.assertTrue(summary["predicate"]["on_target_surface"])
 
         semantic_keys = ("task", "robot", "start", "end", "crossed_rooms", "success")
         self.assertEqual(

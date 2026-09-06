@@ -53,7 +53,9 @@ script or a CI job.
 shelves are staged wherever the user put them; the robot finds them, plans a
 collision-free base path around the rest of the furniture with BFS, and carries
 a book across. Change the fixture (or stage a room in the app and publish it)
-and the robot re-plans.
+and the robot re-plans. Its pass/fail predicate requires the release phase to
+run, the grasp weld to be inactive, the book speed to be below 0.05 m/s, and
+the book centre to rest on the destination shelf surface.
 
 **`--chore tidy`** — the same robot, the same staged room, but a success
 criterion a judge can check rather than eyeball. The toy is either inside the
@@ -124,8 +126,9 @@ recording. See the reset procedure below.
 # Put the committed recordings back after a live run overwrote them.
 git checkout -- public/assets/tasks/
 
-# Clear the generated MJCF scratch file (regenerated on every run).
-rm -f public/assets/sim/_scene_generated.xml
+# Clear any generated MJCF scratch left by an interrupted run.
+# Normal runs use per-run names and remove them after MuJoCo loads the model.
+rm -f public/assets/sim/_scene_generated*.xml
 
 # Rebuild the Marble mesh if it went missing.
 .venv/bin/python scripts/marble_to_mjcf.py \
@@ -177,11 +180,11 @@ a trace with `"success": false` and the reason in a top-level `"error"` field
 run leaves something to read rather than a traceback.
 
 **A run that reports success but looks wrong on video**
-Trust `--chore tidy`. Its predicate is geometric. The `book` chore's check is a
-looser proximity test inherited from the original task: it accepts a book that
-is near the destination surface, including one still held by the gripper above
-it. Tracked as a separate issue; `tidy` is the one to put in front of a judge
-who wants a verified result.
+Read the JSON trace next to the video. Both chores now report a predicate:
+`tidy` checks the toy is inside the basket volume and at rest; `book` checks
+the book was released, the weld is inactive, the book is at rest, and it is on
+the destination shelf surface. A suspicious-looking success should have those
+booleans true; otherwise it is a failed run with `"success": false`.
 
 ---
 

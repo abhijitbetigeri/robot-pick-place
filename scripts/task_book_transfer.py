@@ -43,11 +43,14 @@ WALL_H = 2.6
 SHELF_A = (-4.2, 1.2)      # Bedroom 1
 SHELF_B = (4.2, -1.2)      # Bedroom 2
 SHELF_TOP_Z = 0.82         # height of the shelf surface the book rests on
+SHELF_TOP_HALF = (0.22, 0.45)
 
 # Half-extents of a chunky hardback lying FLAT on the shelf. Standing it upright
 # on its spine is a metastable pose - it topples as soon as the robot moves
 # nearby, and then the grasp pose no longer matches where the book actually is.
 BOOK_SIZE = (0.14, 0.20, 0.032)
+BOOK_REST_SPEED_MAX = 0.05
+BOOK_SURFACE_Z_TOL = 0.08
 
 # Measured forward kinematics: gripper = base + (dx, 0.62 + arm_y, 0.33 + lift_z).
 # The plan solves for base/lift/arm from a desired gripper point rather than
@@ -91,6 +94,31 @@ def base_pose_for(target, arm_y):
 def book_rest_point(shelf):
     """Where the book's centre sits when resting on a shelf surface."""
     return (shelf[0], shelf[1], SHELF_TOP_Z + BOOK_SIZE[2])
+
+
+def book_success_predicate(end_pos, linear_vel, *, weld_active: bool,
+                           release_seen: bool) -> dict:
+    """Strict fixed-task predicate: released, unwelded, still, on Shelf B."""
+    end = np.asarray(end_pos, dtype=float)
+    vel = np.asarray(linear_vel, dtype=float)
+    target = book_rest_point(SHELF_B)
+    on_target_surface = (
+        abs(end[0] - target[0]) <= SHELF_TOP_HALF[0]
+        and abs(end[1] - target[1]) <= SHELF_TOP_HALF[1]
+        and abs(end[2] - target[2]) < BOOK_SURFACE_Z_TOL
+    )
+    speed = float(np.linalg.norm(vel))
+    at_rest = speed < BOOK_REST_SPEED_MAX
+    weld_inactive = not weld_active
+    released = release_seen and weld_inactive
+    return {
+        "on_target_surface": bool(on_target_surface),
+        "at_rest": bool(at_rest),
+        "speed": round(speed, 4),
+        "released": bool(released),
+        "weld_inactive": bool(weld_inactive),
+        "success": bool(on_target_surface and at_rest and released),
+    }
 
 
 def build_mjcf() -> str:
@@ -278,7 +306,7 @@ def build_plan():
 def assert_summary_valid(summary: dict) -> None:
     required_keys = {
         "task", "robot", "simulator", "start", "end", "distance_travelled_m",
-        "crossed_rooms", "success", "phases",
+        "crossed_rooms", "success", "predicate", "phases",
     }
     missing_keys = sorted(required_keys - set(summary))
     if missing_keys:
@@ -286,6 +314,12 @@ def assert_summary_valid(summary: dict) -> None:
 
     if summary["success"] is not True:
         raise SummaryValidationError("success must be true")
+    predicate = summary["predicate"]
+    if predicate.get("success") is not True:
+        raise SummaryValidationError("predicate success must be true")
+    for key in ("on_target_surface", "at_rest", "released", "weld_inactive"):
+        if predicate.get(key) is not True:
+            raise SummaryValidationError(f"predicate {key} must be true")
     if summary["crossed_rooms"] is not True:
         raise SummaryValidationError("crossed_rooms must be true")
 
@@ -448,10 +482,15 @@ def run_task(args) -> int:
         print(f"  {label:22} t={step_i*dt:5.1f}s  book=({bp[0]:6.2f},{bp[1]:6.2f},{bp[2]:5.2f})  {room_of(float(bp[0]))}{extra}")
 
     end_pos = data.xpos[book_bid].copy()
-    placed_on_b = (
-        abs(end_pos[0] - SHELF_B[0]) < 0.45
-        and abs(end_pos[1] - SHELF_B[1]) < 0.55
-        and end_pos[2] > SHELF_TOP_Z - 0.10
+    release_seen = any(
+        rec["phase"] == "RELEASE book" and rec.get("held") is False
+        for rec in trace
+    )
+    predicate = book_success_predicate(
+        end_pos,
+        data.cvel[book_bid][3:6],
+        weld_active=bool(data.eq_active[eq_id]),
+        release_seen=release_seen,
     )
 
     outdir = Path(args.outdir)
@@ -469,7 +508,8 @@ def run_task(args) -> int:
                 "shelf": "B"},
         "distance_travelled_m": round(float(np.linalg.norm(end_pos[:2] - start_pos[:2])), 2),
         "crossed_rooms": room_of(float(start_pos[0])) != room_of(float(end_pos[0])),
-        "success": bool(placed_on_b),
+        "predicate": predicate,
+        "success": predicate["success"],
         "phases": trace,
     }
     summary_path = outdir / SUMMARY_NAME

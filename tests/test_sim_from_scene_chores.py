@@ -276,6 +276,98 @@ def test_book_still_runs_shelf_to_shelf(bedroom):
     assert (src["name"], dst["name"]) == ("Reading Shelf", "Study Shelf")
 
 
+def test_book_predicate_requires_release_not_just_proximity(bedroom):
+    shell = S.scene_shell(bedroom, None, Path("."))
+    chore = S.book_chore(bedroom, bedroom["objects"], shell)
+
+    verdict = chore.verdict(
+        np.array(chore.place_pt),
+        np.array([0.0, 0.0, 0.0]),
+        held=True,
+        released=True,
+    )
+
+    assert verdict["success"] is False
+    assert verdict["released"] is False
+    assert verdict["weld_inactive"] is False
+    assert verdict["on_surface"] is True
+    assert verdict["at_rest"] is True
+
+
+def test_book_predicate_requires_a_release_phase(bedroom):
+    shell = S.scene_shell(bedroom, None, Path("."))
+    chore = S.book_chore(bedroom, bedroom["objects"], shell)
+
+    verdict = chore.verdict(
+        np.array(chore.place_pt),
+        np.array([0.0, 0.0, 0.0]),
+        held=False,
+        released=False,
+    )
+
+    assert verdict["success"] is False
+    assert verdict["released"] is False
+    assert verdict["weld_inactive"] is True
+    assert verdict["on_surface"] is True
+    assert verdict["at_rest"] is True
+
+
+def test_book_predicate_requires_the_book_to_be_at_rest_on_the_target(bedroom):
+    shell = S.scene_shell(bedroom, None, Path("."))
+    chore = S.book_chore(bedroom, bedroom["objects"], shell)
+
+    moving = chore.verdict(
+        np.array(chore.place_pt),
+        np.array([0.0, 0.0, 0.051]),
+        held=False,
+        released=True,
+    )
+    above_surface = chore.verdict(
+        np.array([chore.place_pt[0], chore.place_pt[1], chore.place_pt[2] + 0.22]),
+        np.array([0.0, 0.0, 0.0]),
+        held=False,
+        released=True,
+    )
+    beside_surface = chore.verdict(
+        np.array([chore.place_pt[0] + 0.7, chore.place_pt[1], chore.place_pt[2]]),
+        np.array([0.0, 0.0, 0.0]),
+        held=False,
+        released=True,
+    )
+
+    assert moving["success"] is False
+    assert moving["at_rest"] is False
+    assert moving["released"] is True
+    assert above_surface["success"] is False
+    assert above_surface["on_surface"] is False
+    assert above_surface["released"] is True
+    assert beside_surface["success"] is False
+    assert beside_surface["near_target_xy"] is False
+    assert beside_surface["on_surface"] is True
+
+
+def test_book_predicate_accepts_released_book_settled_on_target(bedroom):
+    shell = S.scene_shell(bedroom, None, Path("."))
+    chore = S.book_chore(bedroom, bedroom["objects"], shell)
+
+    verdict = chore.verdict(
+        np.array(chore.place_pt),
+        np.array([0.0, 0.0, 0.0]),
+        held=False,
+        released=True,
+    )
+
+    assert verdict == {
+        "near_target_xy": True,
+        "on_surface": True,
+        "at_rest": True,
+        "speed": 0.0,
+        "released": True,
+        "weld_inactive": True,
+        "success": True,
+    }
+
+
 # ---------------------------------------------------------------------------
 # Reachability of the phases the plan commits to
 # ---------------------------------------------------------------------------
@@ -457,3 +549,7 @@ def test_book_rollout_still_succeeds(tmp_path):
     assert out.returncode == 0, out.stdout + out.stderr
     trace = json.loads((tmp_path / "scene_bedroom.json").read_text())
     assert trace["success"] is True and trace["chore"] == "book"
+    assert trace["predicate"]["released"] is True
+    assert trace["predicate"]["weld_inactive"] is True
+    assert trace["predicate"]["at_rest"] is True
+    assert trace["predicate"]["on_surface"] is True

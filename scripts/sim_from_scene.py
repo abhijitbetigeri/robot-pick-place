@@ -45,6 +45,8 @@ import task_tidy_basket as T  # noqa: E402
 
 BOOK_SIZE = (0.14, 0.20, 0.032)   # lies flat; upright is metastable
 SURFACE_CLEARANCE = 0.02
+BOOK_REST_SPEED_MAX = 0.05
+BOOK_SURFACE_Z_TOL = 0.08
 
 # Assets whose top surface is a plausible place to put a book down.
 SHELF_ASSETS = ("bookshelf", "tv_console", "coffee_table", "dining_table",
@@ -693,11 +695,25 @@ def book_chore(scene: dict, objects: list, shell: Shell) -> Chore:
     gz = top_of(src) + BOOK_SIZE[2] + SURFACE_CLEARANCE
     px, py = dst["position"]["x"], -dst["position"]["z"]
     pz = top_of(dst) + BOOK_SIZE[2] + SURFACE_CLEARANCE
+    dst_span_x, dst_span_y = footprint_span(dst)
 
-    def verdict(end, vel) -> dict:
-        ok = (abs(end[0] - px) < 0.5 and abs(end[1] - py) < 0.6
-              and end[2] > pz - 0.25)
-        return {"success": bool(ok)}
+    def verdict(end, vel, *, held: bool, released: bool) -> dict:
+        weld_inactive = not held
+        actually_released = released and weld_inactive
+        near_target_xy = (abs(end[0] - px) <= dst_span_x / 2 + BOOK_SIZE[0]
+                          and abs(end[1] - py) <= dst_span_y / 2 + BOOK_SIZE[1])
+        on_surface = abs(end[2] - pz) < BOOK_SURFACE_Z_TOL
+        speed = float(np.linalg.norm(vel))
+        at_rest = speed < BOOK_REST_SPEED_MAX
+        return {
+            "near_target_xy": bool(near_target_xy),
+            "on_surface": bool(on_surface),
+            "at_rest": bool(at_rest),
+            "speed": round(speed, 4),
+            "released": bool(actually_released),
+            "weld_inactive": bool(weld_inactive),
+            "success": bool(near_target_xy and on_surface and at_rest and actually_released),
+        }
 
     return Chore(
         name="book",
@@ -719,6 +735,8 @@ def book_chore(scene: dict, objects: list, shell: Shell) -> Chore:
         camera=(90.0, -46.0, 11.0, (0.0, 0.15, 0.55)),
         build_plan=build_plan,
         verdict=verdict,
+        settle_s=1.5,
+        report_predicate=True,
     )
 
 
@@ -771,7 +789,7 @@ def tidy_chore(scene: dict, objects: list, shell: Shell) -> Chore:
         headline=f"{src['name']} -> {target['object']}",
         camera=(120.0, -40.0, min(12.0, max(6.5, 2.4 * span)), (mid_x, mid_y, 0.5)),
         build_plan=lambda objs, g, p, start: build_tidy_plan(objs, g, p, start, shell),
-        verdict=lambda end, vel: T.in_basket(end, vel, (bx, by)),
+        verdict=lambda end, vel, **_: T.in_basket(end, vel, (bx, by)),
         settle_s=1.5,          # let the toy come to rest before judging it
         report_predicate=True,
         extra_objects=spawned,
@@ -883,7 +901,16 @@ def main() -> int:
             frames.append(renderer.render())
 
     end = data.xpos[bid].copy()
-    verdict = dict(chore.verdict(end, data.cvel[bid][3:6]))
+    released = any(
+        rec["phase"] == f"RELEASE {chore.grasp_body}" and rec.get("held") is False
+        for rec in trace
+    )
+    verdict = dict(chore.verdict(
+        end,
+        data.cvel[bid][3:6],
+        held=bool(data.eq_active[eq_id]),
+        released=released,
+    ))
     if error:
         verdict["success"] = False
         verdict["error"] = error
