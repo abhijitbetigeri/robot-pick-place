@@ -109,7 +109,8 @@ def build_scene(scene, src, dst, marble, sim_dir: Path):
         mesh_asset += (f'\n    <mesh name="mesh_{aid}" '
                        f'file="assets/{Path(assets[aid]["obj"]).name}"/>')
 
-    geoms = "\n".join(S.obj_geom(o, assets) for o in scene["objects"])
+    geoms = "\n".join(S.obj_geom(o, assets) for o in scene["objects"]
+                      if not o["assetId"].startswith("room_"))   # real shelves are in the mesh
     bx, by = src["position"]["x"], -src["position"]["z"]
     bz = S.top_of(src) + BOOK_SIZE[2] + 0.02
 
@@ -201,6 +202,7 @@ def main() -> int:
     ap.add_argument("--cam", nargs=3, type=float, default=None,
                     help="fixed camera position x y z (MuJoCo frame); aims at the robot")
     ap.add_argument("--out-name", default="g1_book")
+    ap.add_argument("--follow", action="store_true", help="camera trails the robot inside the corridor")
     args = ap.parse_args()
 
     scene = (json.loads(Path(args.scene_file).read_text()) if args.scene_file
@@ -265,10 +267,20 @@ def main() -> int:
     stand_off = 0.62                     # how far in front of a shelf G1 stands
     a = np.array([src["position"]["x"], -src["position"]["z"]])
     b = np.array([dst["position"]["x"], -dst["position"]["z"]])
-    a_stand = a + np.array([0.0, -stand_off])
-    b_stand = b + np.array([0.0, -stand_off])
+    # Wall shelves are approached from the room's centre line and the robot
+    # faces the wall it reaches into; free-standing shelves from -y as before.
+    def approach(p, obj):
+        if obj["assetId"].startswith("room_"):
+            sgn = -np.sign(p[0]) if p[0] != 0 else 1.0
+            stand = p + np.array([sgn * stand_off, 0.0])
+        else:
+            stand = p + np.array([0.0, -stand_off])
+        face = float(np.arctan2(*(p - stand)[::-1]))
+        return stand, face
+    a_stand, a_face = approach(a, src)
+    b_stand, b_face = approach(b, dst)
 
-    start = a_stand + np.array([0.0, -1.1])
+    start = a_stand + np.array([0.0, -1.3])
     p1, _ = S.plan_path_with_fallback(objects, tuple(start), tuple(a_stand))
     p2, _ = S.plan_path_with_fallback(objects, tuple(a_stand), tuple(b_stand))
     if p2 is None:
@@ -280,14 +292,14 @@ def main() -> int:
     # --- phases -------------------------------------------------------------
     HOLD = int(1.2 / dt)
     REACH = int(1.0 / dt)
-    segments = [("Walk to Reading Shelf", walk_in, None),
-                ("Reach for book", [walk_in[-1]] * REACH, "reach"),
-                ("Grasp", [walk_in[-1]] * int(0.5 / dt), "grasp"),
-                ("Lift", [walk_in[-1]] * REACH, "hold"),
-                ("Carry across the room", walk_across, "hold"),
-                ("Place on Study Shelf", [walk_across[-1]] * REACH, "reach_hold"),
-                ("Release", [walk_across[-1]] * int(0.5 / dt), "release"),
-                ("Step back", [walk_across[-1]] * HOLD, None)]
+    segments = [("Walk to Reading Shelf", walk_in, None, a_face),
+                ("Reach for book", [walk_in[-1]] * REACH, "reach", a_face),
+                ("Grasp", [walk_in[-1]] * int(0.5 / dt), "grasp", a_face),
+                ("Lift", [walk_in[-1]] * REACH, "hold", a_face),
+                ("Carry across the room", walk_across, "hold", b_face),
+                ("Place on Study Shelf", [walk_across[-1]] * REACH, "reach_hold", b_face),
+                ("Release", [walk_across[-1]] * int(0.5 / dt), "release", b_face),
+                ("Step back", [walk_across[-1]] * HOLD, None, b_face)]
 
     frames, renderer, cam = [], None, None
     if not args.no_video:
@@ -309,15 +321,18 @@ def main() -> int:
     book_start = np.array(book_pt)
     phase_acc = 0.0
 
-    for label, pts, action in segments:
+    heading = np.array([0.0, 1.0])
+    for label, pts, action, face in segments:
         for i, p in enumerate(pts):
             moving = action is None or action == "hold"
             # heading: face along the path while walking, face the shelf when not
             if moving and i + 1 < len(pts):
                 d = np.array(pts[min(i + 3, len(pts) - 1)]) - np.array(p)
-                yaw = np.arctan2(d[1], d[0]) - np.pi / 2 if np.linalg.norm(d) > 1e-6 else 0.0
+                if np.linalg.norm(d) > 1e-6:
+                    heading = d / np.linalg.norm(d)
+                yaw = np.arctan2(heading[1], heading[0])
             else:
-                yaw = 0.0
+                yaw = face
 
             phase_acc += 2 * np.pi * STRIDE_HZ * dt if moving else 0.0
             s = np.sin(phase_acc)
@@ -384,6 +399,10 @@ def main() -> int:
                 if renderer is not None:
                     target = np.array([data.qpos[0], data.qpos[1], 0.95])
                     look_s = target if look_s is None else 0.92 * look_s + 0.08 * target
+                    if args.follow:
+                        want = np.array([p[0], p[1], 0.0]) - 2.1 * np.array([heading[0], heading[1], 0.0]) + np.array([0, 0, 1.35])
+                        want[0] = np.clip(want[0], -0.45, 0.45); want[1] = np.clip(want[1], -3.7, 3.7)
+                        cam_pos = want if cam_pos is None else 0.95 * cam_pos + 0.05 * want
                     if cam_pos is not None:
                         v = look_s - cam_pos
                         dist = float(np.linalg.norm(v))
