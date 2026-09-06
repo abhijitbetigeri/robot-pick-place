@@ -1,7 +1,7 @@
 ## Submission — Spatial Intelligence + Generative 3D Hackathon (SF, 5 Sep 2026)
 
 **▶ Watch the submission video:** https://abhijitbetigeri.github.io/robot-pick-place/ (47 s, plays in the browser)
-**Read the write-up:** [abhijitbetigeri's gist](https://gist.github.com/abhijitbetigeri/58b8c64e0f8e1a2a62f11effa62813b7) (rendered) · [docs/blog.md](docs/blog.md) — how it was built and the nine things that broke.
+**Read the write-up:** [abhijitbetigeri's gist](https://gist.github.com/abhijitbetigeri/58b8c64e0f8e1a2a62f11effa62813b7) (rendered) · [docs/blog.md](docs/blog.md) — how it was built and the eight things that broke.
 Direct download: [household_humanoid_presentation.mp4](https://github.com/abhijitbetigeri/robot-pick-place/releases/download/v1.0/household_humanoid_presentation.mp4)
 Short reel: [demo_reel.mp4](https://raw.githubusercontent.com/abhijitbetigeri/robot-pick-place/main/public/assets/tasks/demo_reel.mp4) · raw robot clip: [g1_cozy.mp4](https://raw.githubusercontent.com/abhijitbetigeri/robot-pick-place/main/public/assets/tasks/g1_cozy.mp4)
 
