@@ -119,7 +119,7 @@ export const RunChorePanel: React.FC<RunChorePanelProps> = ({ shared }) => {
         ok: false,
         error:
           err instanceof Error
-            ? `${err.message} — is scripts/sim_server.py running on :8765?`
+            ? `${err.message} — is scripts/sim_server.py running, and does the Vite proxy point at its port (SIM_SERVER_PORT)?`
             : 'request failed',
       });
     } finally {
