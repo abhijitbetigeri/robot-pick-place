@@ -1,0 +1,125 @@
+{
+ "shareId": "cozy",
+ "listingId": "room2",
+ "listingTitle": "Cozy Room with Bookshelves",
+ "listingAddress": "Generated with World Labs Marble (textured mesh)",
+ "metricBounds": {
+  "widthMeters": 2.5,
+  "depthMeters": 9.1,
+  "ceilingHeightMeters": 2.7
+ },
+ "stylePack": "mint-generated",
+ "objects": [
+  {
+   "objectId": "shelfA",
+   "assetId": "bookshelf",
+   "name": "Reading Shelf",
+   "category": "bedroom_office",
+   "position": {
+    "x": -0.35,
+    "y": 0,
+    "z": -3.5
+   },
+   "rotation": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "scale": {
+    "x": 1,
+    "y": 1,
+    "z": 1
+   },
+   "dimensions": {
+    "width": 0.72,
+    "height": 0.85,
+    "depth": 0.28
+   },
+   "physics": {
+    "isStatic": true,
+    "mass": 45,
+    "friction": [
+     0.8,
+     0.01,
+     0.001
+    ],
+    "restitution": 0.1,
+    "geomType": "box"
+   }
+  },
+  {
+   "objectId": "shelfB",
+   "assetId": "bookshelf",
+   "name": "Study Shelf",
+   "category": "bedroom_office",
+   "position": {
+    "x": 0.35,
+    "y": 0,
+    "z": 1.6
+   },
+   "rotation": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "scale": {
+    "x": 1,
+    "y": 1,
+    "z": 1
+   },
+   "dimensions": {
+    "width": 0.72,
+    "height": 0.85,
+    "depth": 0.28
+   },
+   "physics": {
+    "isStatic": true,
+    "mass": 45,
+    "friction": [
+     0.8,
+     0.01,
+     0.001
+    ],
+    "restitution": 0.1,
+    "geomType": "box"
+   }
+  },
+  {
+   "objectId": "plant",
+   "assetId": "potted_plant",
+   "name": "Potted Fig",
+   "category": "bedroom_office",
+   "position": {
+    "x": 0.75,
+    "y": 0,
+    "z": -0.6
+   },
+   "rotation": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+   },
+   "scale": {
+    "x": 1,
+    "y": 1,
+    "z": 1
+   },
+   "dimensions": {
+    "width": 0.55,
+    "height": 1.4,
+    "depth": 0.55
+   },
+   "physics": {
+    "isStatic": true,
+    "mass": 9,
+    "friction": [
+     0.8,
+     0.01,
+     0.001
+    ],
+    "restitution": 0.1,
+    "geomType": "box"
+   }
+  }
+ ]
+}

@@ -1,0 +1,31 @@
+{
+  "textured_hq": {
+    "obj": "public/assets/sim/room2_textured.obj",
+    "texture": "public/assets/sim/room2_tex.png",
+    "faces": 597197,
+    "vertices": 1790887,
+    "gltf_to_mujoco": {
+      "rotate_x_deg": 90,
+      "then_translate": [
+        -0.04132,
+        -1.27236,
+        0.07863
+      ]
+    },
+    "bounds": {
+      "width_m": 2.527104871127534,
+      "depth_m": 9.131069639769045,
+      "height_m": 2.738714335864222,
+      "min": [
+        -1.263552435563767,
+        -4.5655348198845225,
+        0.0
+      ],
+      "max": [
+        1.263552435563767,
+        4.5655348198845225,
+        2.738714335864222
+      ]
+    }
+  }
+}

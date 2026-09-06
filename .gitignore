@@ -49,3 +49,6 @@ public/assets/sim/assets/
 !.env.example
 assets/unitree_g1/_g1_task.xml
 public/assets/g1/
+public/assets/sim/room2_textured.obj
+public/assets/sim/room2_tex.png
+public/assets/scenarios/new_world/*.glb

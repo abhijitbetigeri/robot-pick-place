@@ -64,7 +64,27 @@ def build_scene(scene, src, dst, marble, sim_dir: Path):
     assets = S.load_assets()
     mesh_asset, marble_geom = "", ""
 
+    floor_group = 0
+    hq = None
     if marble:
+        meta_path = sim_dir / f"{marble}.meta.json"
+        meta_all = json.loads(meta_path.read_text()) if meta_path.exists() else {}
+        hq = meta_all.get("textured_hq")
+
+    if marble and hq:
+        # Marble's high-quality export: real UVs + baked colour texture. This
+        # is the captured room itself, rendered natively by MuJoCo. Its own
+        # floor is part of the mesh, so the synthetic floor plane is hidden.
+        mesh_asset = (
+            f'\n    <texture name="room_tex" type="2d" file="{Path(hq["texture"]).name}"/>'
+            f'\n    <material name="room_mat" texture="room_tex" texuniform="false" '
+            f'specular="0.03" shininess="0.02" reflectance="0"/>'
+            f'\n    <mesh name="marble_shell" file="{Path(hq["obj"]).name}"/>')
+        marble_geom = (
+            '    <geom name="marble_visual" type="mesh" mesh="marble_shell"\n'
+            '          contype="0" conaffinity="0" group="1" material="room_mat"/>')
+        floor_group = 4
+    elif marble:
         meta, mesh_asset = S.marble_assets(marble, sim_dir)
         # Prefer the panorama-textured room when it exists: the plain collider
         # has no UVs and no texture, which is why it renders as grey clay.
@@ -102,9 +122,9 @@ def build_scene(scene, src, dst, marble, sim_dir: Path):
   <include file="{Path(G1_XML).name}"/>
   <option timestep="0.002" gravity="0 0 -9.81" integrator="implicitfast"/>
   <visual>
-    <headlight ambient="0.34 0.34 0.36" diffuse="0.42 0.42 0.44" specular="0.08 0.08 0.08"/>
+    <headlight ambient="0.62 0.62 0.62" diffuse="0.30 0.30 0.30" specular="0.05 0.05 0.05"/>
     <quality shadowsize="4096" offsamples="8"/>
-    <global offwidth="1920" offheight="1080"/>
+    <global offwidth="1920" offheight="1080" fovy="58"/>
   </visual>
 
   <asset>
@@ -124,7 +144,7 @@ def build_scene(scene, src, dst, marble, sim_dir: Path):
            specular="0.2 0.2 0.2" castshadow="true"/>
     <light name="fill" pos="2.5 -1.5 2.8" dir="-0.5 0.4 -1" diffuse="0.32 0.34 0.40"
            castshadow="false"/>
-    <geom name="floor" type="plane" size="8 8 0.1" material="floor_mat"
+    <geom name="floor" type="plane" size="8 8 0.1" material="floor_mat" group="{floor_group}"
           friction="1.0 0.05 0.01"/>
 {marble_geom}
 {geoms}
@@ -178,6 +198,9 @@ def main() -> int:
     ap.add_argument("--height", type=int, default=540)
     ap.add_argument("--fps", type=int, default=30)
     ap.add_argument("--no-video", action="store_true")
+    ap.add_argument("--cam", nargs=3, type=float, default=None,
+                    help="fixed camera position x y z (MuJoCo frame); aims at the robot")
+    ap.add_argument("--out-name", default="g1_book")
     args = ap.parse_args()
 
     scene = (json.loads(Path(args.scene_file).read_text()) if args.scene_file
@@ -199,7 +222,11 @@ def main() -> int:
            .replace('<mesh name="marble_shell" file="',
                     f'<mesh name="marble_shell" file="{up}public/assets/sim/')
            .replace('<texture name="pano_tex" type="2d" file="',
-                    f'<texture name="pano_tex" type="2d" file="{up}public/assets/sim/'))
+                    f'<texture name="pano_tex" type="2d" file="{up}public/assets/sim/')
+           .replace('<texture name="room_tex" type="2d" file="',
+                    f'<texture name="room_tex" type="2d" file="{up}public/assets/sim/')
+           .replace('rgba="0.5 0.4 0.3 0.25"', 'rgba="0.5 0.4 0.3 0"')
+           .replace('rgba="0.5 0.4 0.3 0.15"', 'rgba="0.5 0.4 0.3 0"'))
     model = mujoco.MjModel.from_xml_path(str(model_path))
     data = mujoco.MjData(model)
 
@@ -269,6 +296,12 @@ def main() -> int:
         mujoco.mjv_defaultCamera(cam)
         cam.azimuth, cam.elevation, cam.distance = 96.0, -18.0, 6.2
         cam.lookat[:] = [0.0, 0.0, 1.0]
+    # Fixed camera position inside the room; per frame we solve MuJoCo's
+    # azimuth/elevation/distance so that position looks at the robot. An
+    # orbiting camera at 6 m ends up outside the walls of a 2.5 m-wide room
+    # and sees only the back of the mesh.
+    cam_pos = np.array(args.cam, dtype=float) if args.cam else None
+    look_s = None
 
     trajectory = []
     step = 0
@@ -349,7 +382,18 @@ def main() -> int:
             step += 1
             if step % steps_per_frame == 0:
                 if renderer is not None:
-                    cam.lookat[:] = [data.qpos[0], data.qpos[1], 1.0]
+                    target = np.array([data.qpos[0], data.qpos[1], 0.95])
+                    look_s = target if look_s is None else 0.92 * look_s + 0.08 * target
+                    if cam_pos is not None:
+                        v = look_s - cam_pos
+                        dist = float(np.linalg.norm(v))
+                        fwd = v / dist
+                        cam.lookat[:] = look_s
+                        cam.distance = dist
+                        cam.elevation = float(np.degrees(np.arcsin(np.clip(fwd[2], -1, 1))))
+                        cam.azimuth = float(np.degrees(np.arctan2(fwd[1], fwd[0])))
+                    else:
+                        cam.lookat[:] = [data.qpos[0], data.qpos[1], 1.0]
                     renderer.update_scene(data, camera=cam)
                     frames.append(renderer.render())
                 q = np.zeros(4)
@@ -380,7 +424,7 @@ def main() -> int:
         "success": ok,
         "frames": len(trajectory),
     }
-    (outdir / "g1_book.json").write_text(json.dumps(summary, indent=2))
+    (outdir / f"{args.out_name}.json").write_text(json.dumps(summary, indent=2))
     # Export geometry FROM MuJoCo, not the source STLs.
     #
     # MuJoCo transforms mesh vertices when it compiles the model (it re-centres
@@ -413,7 +457,7 @@ def main() -> int:
     (web_mesh_dir / "g1_geom.json").write_text(json.dumps(manifest))
     shipped = manifest
 
-    (outdir / "g1_book_traj.json").write_text(json.dumps({
+    (outdir / f"{args.out_name}_traj.json").write_text(json.dumps({
         "fps": args.fps,
         "marble_world": args.marble,
         "book_size": list(BOOK_SIZE),
@@ -429,9 +473,9 @@ def main() -> int:
 
     if frames:
         import imageio.v2 as imageio
-        imageio.mimwrite(outdir / "g1_book.mp4", frames, fps=args.fps,
+        imageio.mimwrite(outdir / f"{args.out_name}.mp4", frames, fps=args.fps,
                          quality=8, macro_block_size=None)
-        print(f"video -> {outdir / 'g1_book.mp4'} ({len(frames)} frames)")
+        print(f"video -> {outdir / f'{args.out_name}.mp4'} ({len(frames)} frames)")
     print(f"\n{src['name']} -> {dst['name']}")
     print(f"SUCCESS: {ok}")
     return 0 if ok else 1

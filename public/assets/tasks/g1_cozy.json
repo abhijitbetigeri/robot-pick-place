@@ -1,0 +1,18 @@
+{
+  "robot": "Unitree G1 (29 DOF) - real model, SCRIPTED gait (not a learned policy)",
+  "world": "room2",
+  "from": "Reading Shelf",
+  "to": "Study Shelf",
+  "start": [
+    -0.35,
+    3.5,
+    0.9
+  ],
+  "end": [
+    0.35,
+    -1.6,
+    0.9
+  ],
+  "success": true,
+  "frames": 493
+}
