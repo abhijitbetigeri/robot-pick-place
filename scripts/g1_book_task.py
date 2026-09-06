@@ -123,7 +123,7 @@ def build_scene(scene, src, dst, marble, sim_dir: Path):
   <include file="{Path(G1_XML).name}"/>
   <option timestep="0.002" gravity="0 0 -9.81" integrator="implicitfast"/>
   <visual>
-    <headlight ambient="0.62 0.62 0.62" diffuse="0.30 0.30 0.30" specular="0.05 0.05 0.05"/>
+    <headlight ambient="0.78 0.78 0.78" diffuse="0.22 0.22 0.22" specular="0.04 0.04 0.04"/>
     <quality shadowsize="4096" offsamples="8"/>
     <global offwidth="1920" offheight="1080" fovy="58"/>
   </visual>
@@ -203,6 +203,8 @@ def main() -> int:
                     help="fixed camera position x y z (MuJoCo frame); aims at the robot")
     ap.add_argument("--out-name", default="g1_book")
     ap.add_argument("--follow", action="store_true", help="camera trails the robot inside the corridor")
+    ap.add_argument("--gamma", type=float, default=1.0, help="exposure lift applied before encoding (0.7 brightens)")
+    ap.add_argument("--gain", type=float, default=1.0)
     args = ap.parse_args()
 
     scene = (json.loads(Path(args.scene_file).read_text()) if args.scene_file
@@ -492,8 +494,13 @@ def main() -> int:
 
     if frames:
         import imageio.v2 as imageio
+        if args.gamma != 1.0 or args.gain != 1.0:
+            frames = [(np.clip((f.astype(np.float32) / 255.0) ** args.gamma * args.gain, 0, 1) * 255)
+                      .astype(np.uint8) for f in frames]
+        # quality=10 is near-lossless and produces >100 MB at 1080p, which GitHub
+        # rejects; 9 keeps it well under while staying visually identical.
         imageio.mimwrite(outdir / f"{args.out_name}.mp4", frames, fps=args.fps,
-                         quality=8, macro_block_size=None)
+                         quality=9, macro_block_size=None)
         print(f"video -> {outdir / f'{args.out_name}.mp4'} ({len(frames)} frames)")
     print(f"\n{src['name']} -> {dst['name']}")
     print(f"SUCCESS: {ok}")
