@@ -2,165 +2,180 @@ import { chromium } from "playwright";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
-
 const browser = await chromium.launch({
+  headless: true,
   ...(process.env.CHROME_PATH
     ? { executablePath: process.env.CHROME_PATH }
     : {}),
-  headless: true,
   args: [
     "--no-sandbox",
+    "--disable-gpu-sandbox",
     ...(process.env.TRON_ANGLE
       ? ["--use-angle=" + process.env.TRON_ANGLE]
       : []),
-    "--disable-gpu-sandbox",
   ],
 });
-const errors = [];
-const checks = [];
+const errors = [],
+  checks = [];
+const base = process.env.TRON_URL || "http://localhost:4174/";
+const observe = (page) => {
+  page.on("pageerror", (e) => errors.push(e.message));
+  page.on("console", (m) => {
+    if (m.type() === "error") errors.push(m.text());
+  });
+};
+const game = (page) => page.evaluate(() => window.__TRON__.game());
+const state = (page) => page.evaluate(() => window.__TRON__.state());
+const check = (text) => {
+  checks.push(text);
+  console.log("Verified:", text);
+};
 await mkdir("artifacts", { recursive: true });
 try {
   const page = await browser.newPage({
     viewport: { width: 1600, height: 1040 },
     acceptDownloads: true,
   });
-  page.on("pageerror", (error) => errors.push(error.message));
-  page.on("console", (message) => {
-    if (message.type() === "error") errors.push(message.text());
-  });
-  const base = process.env.TRON_URL || "http://localhost:4174/";
+  observe(page);
   await page.goto(base);
   await page.waitForFunction(() => window.__TRON__?.ready, null, {
     timeout: 120000,
   });
-  await page.getByRole("button", { name: "Pause film", exact: true }).click();
-  const paused = await page.evaluate(() => window.__TRON__.state());
-  assert.equal(paused.playing, false);
-  console.log("Verified step", checks.length + 1);
-  checks.push("Production app loads and playback pauses.");
-  await page.getByRole("button", { name: /Solar wasteland/ }).click();
-  let state = await page.evaluate(() => window.__TRON__.state());
-  assert.equal(state.active, 1);
-  assert.ok(Math.abs(state.time - 37.4) < 0.001);
-  await page.locator(".timeline").fill("73");
-  state = await page.evaluate(() => window.__TRON__.state());
-  assert.equal(state.active, 2);
-  assert.equal(state.time, 73);
-  console.log("Verified step", checks.length + 1);
-  checks.push("Chapter buttons and scrubbing seek the correct world.");
-  await page.locator(".timeline").blur();
-  await page.keyboard.press("Digit4");
-  state = await page.evaluate(() => window.__TRON__.state());
-  assert.equal(state.active, 3);
+  assert.equal((await state(page)).riding, true);
+  assert.equal((await game(page)).world, 3);
+  assert.equal((await game(page)).status, "ready");
+  await page.screenshot({ path: "artifacts/game-ready.png" });
   await page
-    .getByRole("button", { name: "Play mission", exact: false })
+    .getByRole("button", { name: "Start mission", exact: true })
     .click();
-  assert.equal(
-    (await page.evaluate(() => window.__TRON__.state())).riding,
-    true,
-  );
-  await page.getByRole("button", { name: "Back to film", exact: false }).blur();
-  const spawn = await page.evaluate(() => window.__TRON__.game().riders[0].p);
-  assert.equal(
-    (await page.evaluate(() => window.__TRON__.game())).status,
-    "ready",
-  );
+  const spawn = (await game(page)).riders[0].p;
   await page.keyboard.down("KeyW");
   await page.keyboard.down("KeyD");
   await page.keyboard.down("ShiftLeft");
   await page.waitForFunction(() => window.__TRON__.game().time > 0.7);
-  await page.keyboard.up("KeyW");
   await page.keyboard.up("KeyD");
-  const moved = await page.evaluate(() => window.__TRON__.game());
+  await page.keyboard.up("ShiftLeft");
+  await page.waitForFunction(() => window.__TRON__.game().time > 1.6);
+  await page.keyboard.up("KeyW");
+  await page.keyboard.press("KeyP");
+  const moved = await game(page);
+  assert.equal(moved.status, "running");
   assert.ok(
     Math.hypot(
       moved.riders[0].p[0] - spawn[0],
       moved.riders[0].p[2] - spawn[2],
-    ) > 5,
+    ) > 15,
   );
-  assert.ok(moved.energy < 90);
   assert.notEqual(moved.riders[0].heading, Math.PI);
+  assert.ok(moved.riders[0].trail.length > 25);
+  assert.ok(moved.energy < 100);
+  await page.screenshot({ path: "artifacts/game-ribbons.png" });
+  await page.waitForTimeout(250);
+  assert.equal((await game(page)).time, moved.time);
+  await page.keyboard.press("KeyP");
   await page.keyboard.press("KeyR");
-  assert.equal(
-    (await page.evaluate(() => window.__TRON__.game())).status,
-    "ready",
+  await page.waitForFunction(() => window.__TRON__.game().status === "ready");
+  check(
+    "The default screen is playable: Start, steering, boost, persistent trails, pause, and restart work.",
   );
-  await page.keyboard.up("ShiftLeft");
-  await page.keyboard.press("Digit2");
-  assert.equal(
-    await page
-      .getByRole("button", { name: /Solar wasteland/ })
-      .getAttribute("aria-current"),
-    "true",
+  await page.getByRole("button", { name: /Meridian city/ }).click();
+  assert.equal((await game(page)).world, 0);
+  await page.keyboard.down("KeyW");
+  await page.waitForFunction(() => window.__TRON__.game().time > 0.3);
+  await page.keyboard.up("KeyW");
+  assert.equal((await game(page)).status, "running");
+  // Run off the city route with real controls and verify an actual loss screen.
+  await page.keyboard.down("KeyD");
+  await page.waitForFunction(() => window.__TRON__.game().status === "lost");
+  await page.keyboard.up("KeyD");
+  await page.getByRole("button", { name: /Try again/ }).click();
+  await page.waitForFunction(() => window.__TRON__.game().status === "ready");
+  check(
+    "Selecting a world keeps keyboard controls working; leaving the road loses the mission and retry resets it.",
   );
-  await page.keyboard.press("Escape");
-  assert.equal(
-    (await page.evaluate(() => window.__TRON__.state())).riding,
-    false,
-  );
-  console.log("Verified step", checks.length + 1);
-  checks.push(
-    "Actual player movement, heading changes, boost energy, restart, world switching, and Escape work.",
+  await page.getByRole("button", { name: /Watch demo/ }).click();
+  await page.getByRole("button", { name: "Pause film", exact: true }).click();
+  assert.equal((await state(page)).riding, false);
+  await page.getByRole("button", { name: /Solar wasteland/ }).click();
+  assert.equal((await state(page)).time, 10.8);
+  await page.locator(".timeline").fill("26");
+  assert.equal((await state(page)).active, 2);
+  await page.locator(".timeline").blur();
+  await page.keyboard.press("Digit4");
+  assert.equal((await state(page)).active, 3);
+  check(
+    "The optional 44-second demo has working chapter selection and scrubbing.",
   );
   await page.getByRole("button", { name: "Sound off", exact: false }).click();
-  await page.getByRole("button", { name: "Sound on", exact: false }).waitFor();
   await page.getByRole("button", { name: "Sound on", exact: false }).click();
-  console.log("Verified step", checks.length + 1);
-  checks.push("Audio enables and mutes without a playback error.");
-  if ((await page.evaluate(() => window.__TRON__.state())).playing)
-    await page.getByRole("button", { name: "Pause film", exact: true }).click();
-  await page.getByRole("button", { name: "All worlds", exact: false }).click();
+  check("Sound can be enabled and muted.");
+  await page.getByRole("button", { name: /All worlds/ }).click();
   await page.screenshot({ path: "artifacts/app-desktop.png" });
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.screenshot({ path: "artifacts/app-mobile.png" });
+  const mobile = await browser.newPage({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+  });
+  observe(mobile);
+  await mobile.goto(base);
+  await mobile.waitForFunction(() => window.__TRON__?.ready, null, {
+    timeout: 120000,
+  });
+  await mobile
+    .getByRole("button", { name: "Start mission", exact: true })
+    .tap();
+  await mobile.waitForFunction(() => window.__TRON__.game().time > 0.25);
+  assert.equal((await game(mobile)).status, "running");
   assert.ok(
-    await page.evaluate(
+    await mobile
+      .getByRole("button", { name: "Boost", exact: true })
+      .isVisible(),
+  );
+  assert.ok(
+    await mobile.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   );
-  const canvas = await page.locator("canvas").boundingBox();
-  assert.ok(canvas && canvas.width > 300 && canvas.height > 100);
-  console.log("Verified step", checks.length + 1);
-  checks.push(
-    "390 px mobile layout has a visible canvas and no horizontal overflow.",
+  await mobile.screenshot({ path: "artifacts/app-mobile.png" });
+  await mobile.close();
+  check(
+    "Touch users can start the game and see driving controls at 390 px without horizontal overflow.",
   );
-  await page.setViewportSize({ width: 1600, height: 1040 });
   const downloadPromise = page.waitForEvent("download", { timeout: 30000 });
-  await page.getByRole("button", { name: "Record film", exact: false }).click();
+  await page.getByRole("button", { name: /Record demo/ }).click();
   await page.waitForFunction(() => window.__TRON__.state().time > 1.5);
-  await page.evaluate(() => window.__TRON__.render(119.99));
+  await page.evaluate(() => window.__TRON__.render(43.99));
   const download = await downloadPromise;
   await download.saveAs(
     "artifacts/browser-recording-check." +
       (download.suggestedFilename().endsWith("mp4") ? "mp4" : "webm"),
   );
-  console.log("Verified step", checks.length + 1);
-  checks.push(
-    "Browser recording starts, includes the audio path, and downloads a video.",
+  check(
+    "Recording the short demo downloads a video and stops at the new endpoint.",
   );
   await page.close();
-
   const offline = await browser.newPage();
+  observe(offline);
   await offline.goto(base + "?capture=1");
-  await offline.waitForFunction(() => window.__TRON__?.ready);
-  const sample = (time) =>
+  await offline.waitForFunction(() => window.__TRON__?.ready, null, {
+    timeout: 120000,
+  });
+  const sample = (t) =>
     offline.evaluate(async (t) => {
       await window.__TRON__.render(t);
       return window.__TRON__.frame();
-    }, time);
-  const first = await sample(14);
-  await sample(73);
-  const second = await sample(14);
-  const hash = (data) => createHash("sha256").update(data).digest("hex");
+    }, t);
+  const first = await sample(6);
+  await sample(26);
+  const second = await sample(6);
+  const hash = (s) => createHash("sha256").update(s).digest("hex");
   assert.equal(hash(first), hash(second));
-  console.log("Verified step", checks.length + 1);
-  checks.push("Seeking away and back produces an identical rendered frame.");
+  check("Seeking away and back renders an identical frame.");
   assert.deepEqual(errors, []);
   await writeFile(
     "artifacts/verification.json",
     JSON.stringify({ checks, browserErrors: errors }, null, 2) + "\n",
   );
-  console.log(checks.join("\n"));
 } finally {
   await browser.close();
 }

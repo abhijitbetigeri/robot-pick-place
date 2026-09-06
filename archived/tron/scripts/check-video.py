@@ -5,7 +5,7 @@ import json
 import subprocess
 
 root = Path(__file__).resolve().parents[1]
-movie = root / 'artifacts/tron-worlds-2min.mp4'
+movie = root / 'artifacts/tron-worlds-demo.mp4'
 result = json.loads(subprocess.check_output([
     'ffprobe', '-v', 'error', '-show_streams', '-show_format', '-of', 'json', str(movie),
 ]))
@@ -14,8 +14,8 @@ audio = next(stream for stream in result['streams'] if stream['codec_type'] == '
 assert video['codec_name'] == 'h264'
 assert (video['width'], video['height']) == (1920, 1080)
 assert video['avg_frame_rate'] == '30/1'
-assert int(video['nb_frames']) == 3600
-assert abs(float(result['format']['duration']) - 120) < .05
+assert int(video['nb_frames']) == 1320
+assert abs(float(result['format']['duration']) - 44) < .05
 assert audio['codec_name'] == 'aac'
 assert audio['channels'] == 2
 quality = subprocess.run([

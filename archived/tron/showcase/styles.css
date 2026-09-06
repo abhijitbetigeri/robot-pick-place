@@ -459,14 +459,147 @@ button:disabled {
     animation: none;
   }
 }
-.mission-overlay{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);width:min(520px,80%);padding:30px;text-align:center;background:#101b27ee;border:1px solid #b3cbd033;border-radius:14px;backdrop-filter:blur(18px);box-shadow:0 20px 80px #0006}
-.mission-overlay h2{font-size:clamp(24px,3vw,44px);margin:10px 0 14px;letter-spacing:-.04em}
-.mission-overlay p{color:#c2d0d7;line-height:1.5;margin:9px 0}
-.mission-overlay .mission-help{font-size:13px;color:#8ca3b1}
-.mission-eyebrow{text-transform:uppercase;font-size:11px;letter-spacing:.15em;color:#abc6d1}
-.touch-controls{position:absolute;bottom:42px;left:15px;right:15px;display:none;justify-content:center;gap:8px;touch-action:none}
-.touch-controls button{background:#132431df;color:#effaff;border:1px solid #c7e9ff55;border-radius:9px;padding:14px 18px;touch-action:none;user-select:none}
-@media(pointer:coarse){.touch-controls{display:flex}.ride-instructions{display:none}.mission-overlay{padding:15px}.touch-controls button{padding:12px 9px}}
-.run-board{padding:10px 24px;background:#0c151e;border-top:1px solid #b3cbd022;display:flex;align-items:center;gap:24px;font-size:12px;color:#a6bac5;flex-wrap:wrap}
-.run-board label{display:flex;align-items:center;gap:9px}.run-board input{background:#1b2a34;color:#e0ecef;border:1px solid #768e9b55;border-radius:5px;padding:6px 9px;width:145px;font:inherit}
-.leader-rows{display:flex;gap:18px;flex-wrap:wrap}.leader-rows b{color:#d3e3e8;font-weight:500}.run-sync{font-size:11px;color:#7fa99d}
+.mission-overlay {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+  width: min(520px, 80%);
+  padding: 30px;
+  text-align: center;
+  background: #101b27ee;
+  border: 1px solid #b3cbd033;
+  border-radius: 14px;
+  backdrop-filter: blur(18px);
+  box-shadow: 0 20px 80px #0006;
+}
+.mission-overlay h2 {
+  font-size: clamp(24px, 3vw, 44px);
+  margin: 10px 0 14px;
+  letter-spacing: -0.04em;
+}
+.mission-overlay p {
+  color: #c2d0d7;
+  line-height: 1.5;
+  margin: 9px 0;
+}
+.mission-overlay .mission-help {
+  font-size: 13px;
+  color: #8ca3b1;
+}
+.mission-eyebrow {
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: #abc6d1;
+}
+.touch-controls {
+  position: absolute;
+  bottom: 42px;
+  left: 15px;
+  right: 15px;
+  display: none;
+  justify-content: center;
+  gap: 8px;
+  touch-action: none;
+}
+.touch-controls button {
+  background: #132431df;
+  color: #effaff;
+  border: 1px solid #c7e9ff55;
+  border-radius: 9px;
+  padding: 14px 18px;
+  touch-action: none;
+  user-select: none;
+}
+@media (pointer: coarse) {
+  .touch-controls {
+    display: flex;
+  }
+  .ride-instructions {
+    display: none;
+  }
+  .mission-overlay {
+    padding: 15px;
+  }
+  .touch-controls button {
+    padding: 12px 9px;
+  }
+}
+.run-board {
+  padding: 10px 24px;
+  background: #0c151e;
+  border-top: 1px solid #b3cbd022;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  font-size: 12px;
+  color: #a6bac5;
+  flex-wrap: wrap;
+}
+.run-board label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.run-board input {
+  background: #1b2a34;
+  color: #e0ecef;
+  border: 1px solid #768e9b55;
+  border-radius: 5px;
+  padding: 6px 9px;
+  width: 145px;
+  font: inherit;
+}
+.leader-rows {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.leader-rows b {
+  color: #d3e3e8;
+  font-weight: 500;
+}
+.run-sync {
+  font-size: 11px;
+  color: #7fa99d;
+}
+
+.game-scrubber {
+  display: none;
+}
+.start-mission {
+  margin-top: 12px;
+  min-width: 170px;
+  font-size: 15px;
+}
+@media (max-width: 600px) {
+  .app {
+    min-height: 720px;
+  }
+  .viewer {
+    aspect-ratio: 4/3;
+  }
+  .mission-overlay {
+    width: 90%;
+    padding: 12px;
+    top: 45%;
+  }
+  .mission-overlay h2 {
+    font-size: 24px;
+    margin: 6px 0;
+  }
+  .mission-overlay p,
+  .mission-overlay .mission-help {
+    font-size: 11px;
+    margin: 5px 0;
+  }
+  .start-mission {
+    margin-top: 5px;
+    font-size: 12px;
+  }
+  .touch-controls {
+    bottom: 8px;
+    gap: 5px;
+  }
+}

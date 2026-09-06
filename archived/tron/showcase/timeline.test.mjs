@@ -15,35 +15,39 @@ const { outputText } = ts.transpileModule(source, {
 const { frameAt, WORLDS, DURATION, formatTime } = await import(
   "data:text/javascript;base64," + Buffer.from(outputText).toString("base64")
 );
-
-test("film opens and closes on all four worlds", () => {
-  for (const time of [0, 4, 7.9, 34, 61, 88, 115, DURATION]) {
-    assert.equal(frameAt(time).active, -1);
-    assert.equal(frameAt(time).zoom, 0);
+test("the brief overview is followed by each world once, with no closing replay", () => {
+  assert.equal(DURATION, 44);
+  assert.equal(frameAt(0).active, -1);
+  assert.equal(frameAt(1.99).active, -1);
+  const sequence = [];
+  for (let i = 0; i <= DURATION * 30; i++) {
+    const active = frameAt(i / 30).active;
+    if (sequence.at(-1) !== active) sequence.push(active);
   }
-  assert.equal(frameAt(115).closing, true);
+  assert.deepEqual(sequence, [-1, 0, 1, 2, 3]);
+  assert.equal(frameAt(DURATION).active, 3);
 });
-
-test("every chapter expands smoothly, holds, and returns to its tile", () => {
-  WORLDS.forEach((world, index) => {
-    assert.equal(frameAt(world.start).zoom, 0);
-    assert.equal(frameAt(world.start + 0.9).zoom.toFixed(5), "0.50000");
-    assert.ok(frameAt(world.start + 1.8).zoom > 0.999999);
-    assert.equal(frameAt((world.start + world.end) / 2).active, index);
-    assert.equal(frameAt(world.end - 0.9).zoom.toFixed(5), "0.50000");
-    assert.equal(frameAt(world.end).zoom, 0);
+test("every chapter expands from its tile, and source time always advances", () => {
+  WORLDS.forEach((w, index) => {
+    assert.equal(frameAt(w.start).zoom, 0);
+    assert.ok(frameAt(w.start + 0.65).zoom > 0.999);
+    let last = -1;
+    for (let t = w.start; t < w.end; t += 1 / 30) {
+      const s = frameAt(t);
+      assert.equal(s.active, index);
+      assert.ok(s.chapterTime > last);
+      last = s.chapterTime;
+    }
   });
 });
-
-test("scrubbing is stable and never leaves timeline bounds", () => {
-  for (let frame = 0; frame <= DURATION * 30; frame++) {
-    const state = frameAt(frame / 30);
-    assert.ok(state.zoom >= 0 && state.zoom <= 1);
-    assert.ok(state.active >= -1 && state.active <= 3);
-    assert.deepEqual(state, frameAt(frame / 30));
+test("scrubbing is deterministic, bounded, and formatted for the short cut", () => {
+  for (let i = 0; i <= DURATION * 30; i++) {
+    const s = frameAt(i / 30);
+    assert.ok(s.zoom >= 0 && s.zoom <= 1);
+    assert.deepEqual(s, frameAt(i / 30));
   }
-  assert.equal(frameAt(-20).time, 0);
+  assert.equal(frameAt(-10).time, 0);
   assert.equal(frameAt(Infinity).time, 0);
-  assert.equal(frameAt(200).time, 120);
-  assert.equal(formatTime(120), "02:00");
+  assert.equal(frameAt(200).time, 44);
+  assert.equal(formatTime(44), "00:44");
 });

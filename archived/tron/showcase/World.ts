@@ -230,21 +230,43 @@ function makeBike(color: string) {
 class Ribbon {
   mesh: T.Mesh;
   geometry = new T.BufferGeometry();
-  positions = new Float32Array(2049 * 6);
+  positions = new Float32Array(2049 * 12);
   constructor(color: string) {
-    const uv = new Float32Array(2049 * 4),
-      ix: number[] = [];
+    const uv = new Float32Array(2049 * 8),
+      indices: number[] = [];
     for (let i = 0; i <= 2048; i++) {
-      uv.set([i / 2048, 0, i / 2048, 1], i * 4);
-      if (i < 2048)
-        ix.push(i * 2, i * 2 + 2, i * 2 + 1, i * 2 + 1, i * 2 + 2, i * 2 + 3);
+      uv.set([i / 2048, 0, i / 2048, 1, i / 2048, 0, i / 2048, 1], i * 8);
+      if (i < 2048) {
+        const a = i * 4,
+          b = a + 4;
+        indices.push(
+          a,
+          b,
+          a + 1,
+          a + 1,
+          b,
+          b + 1,
+          a + 2,
+          a + 3,
+          b + 2,
+          a + 3,
+          b + 3,
+          b + 2,
+          a + 1,
+          b + 1,
+          a + 3,
+          a + 3,
+          b + 1,
+          b + 3,
+        );
+      }
     }
     this.geometry.setAttribute(
       "position",
       new T.BufferAttribute(this.positions, 3).setUsage(T.DynamicDrawUsage),
     );
     this.geometry.setAttribute("uv", new T.BufferAttribute(uv, 2));
-    this.geometry.setIndex(ix);
+    this.geometry.setIndex(indices);
     this.mesh = new T.Mesh(
       this.geometry,
       new T.ShaderMaterial({
@@ -256,26 +278,47 @@ class Ribbon {
         transparent: true,
         depthWrite: false,
         vertexShader:
-          "varying vec2 v;void main(){v=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}",
+          "varying vec2 v; void main(){v=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}",
         fragmentShader:
-          "varying vec2 v;uniform vec3 color;uniform float opacity;void main(){float edge=pow(abs(v.y-.5)*2.,14.);float scan=.94+.06*sin(v.y*70.);gl_FragColor=vec4(color*(.7+edge*1.4),(.3+edge*.65)*opacity*scan);}",
+          "varying vec2 v; uniform vec3 color; uniform float opacity; void main(){float edge=pow(abs(v.y-.5)*2.,10.);vec3 light=mix(color*1.35,vec3(1.8),edge*.65);gl_FragColor=vec4(light,(.72+edge*.28)*opacity);}",
       }),
     );
     this.mesh.frustumCulled = false;
+    this.mesh.renderOrder = 5;
   }
   update(points: V3[], opacity = 1) {
     const count = Math.min(2049, points.length);
     this.mesh.visible = count > 1 && opacity > 0;
     (this.mesh.material as T.ShaderMaterial).uniforms.opacity.value = opacity;
     for (let i = 0; i < count; i++) {
-      const p =
-        points[Math.round((i * (points.length - 1)) / Math.max(1, count - 1))];
+      const j = Math.round((i * (points.length - 1)) / Math.max(1, count - 1));
+      const p = points[j],
+        previous = points[Math.max(0, j - 1)],
+        next = points[Math.min(points.length - 1, j + 1)];
+      const dx = next[0] - previous[0],
+        dz = next[2] - previous[2],
+        length = Math.hypot(dx, dz) || 1;
+      const nx = (dz / length) * 0.16,
+        nz = (-dx / length) * 0.16;
       this.positions.set(
-        [p[0], p[1] + 0.12, p[2], p[0], p[1] + 1.6, p[2]],
-        i * 6,
+        [
+          p[0] + nx,
+          p[1] + 0.12,
+          p[2] + nz,
+          p[0] + nx,
+          p[1] + 1.6,
+          p[2] + nz,
+          p[0] - nx,
+          p[1] + 0.12,
+          p[2] - nz,
+          p[0] - nx,
+          p[1] + 1.6,
+          p[2] - nz,
+        ],
+        i * 12,
       );
     }
-    this.geometry.setDrawRange(0, Math.max(0, count - 1) * 6);
+    this.geometry.setDrawRange(0, Math.max(0, count - 1) * 18);
     this.geometry.attributes.position.needsUpdate = true;
   }
 }
@@ -393,7 +436,7 @@ export class World {
     sx.fillStyle = gradient;
     sx.fillRect(0, 0, 128, 128);
     const shadowTexture = new T.CanvasTexture(sc);
-    const colors = [WORLDS[index].color, "#f07186", "#edbe6e", "#8faefe"];
+    const colors = ["#42dcff", "#ff5177", "#ffc34a", "#8f8bff"];
     for (let i = 0; i < 4; i++) {
       const bike = makeBike(colors[i]);
       this.bikes.push(bike);
@@ -1050,8 +1093,11 @@ export class World {
         : t > level.route[Math.min(i + 1, level.route.length - 1)][0];
       cp.visible = !done;
     });
-    const chase = p.clone().addScaledVector(direction, -13);
-    chase.y += 3.8;
+    const chase = p
+      .clone()
+      .addScaledVector(direction, -16)
+      .addScaledVector(normal, 5);
+    chase.y += 6;
     const target = p.clone().addScaledVector(direction, 10);
     target.y += 1.6;
     const side = p

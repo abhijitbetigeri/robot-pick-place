@@ -16,20 +16,20 @@ const width = Number(option("width", "1920"));
 const height = Number(option("height", "1080"));
 const fps = Number(option("fps", "30"));
 const start = Number(option("start", "0"));
-const seconds = Number(option("seconds", "120"));
+const seconds = Number(option("seconds", "44"));
 if (
   ![width, height, fps, seconds].every((n) => Number.isFinite(n) && n > 0) ||
   width % 2 ||
   height % 2 ||
   start < 0 ||
-  start + seconds > 120
+  start + seconds > 44
 )
   throw new Error(
-    "Use positive dimensions, an even width/height, and a time range within 0–120 seconds.",
+    "Use positive dimensions, an even width/height, and a time range within 0–44 seconds.",
   );
 const output = resolve(
   root,
-  option("output", "artifacts/tron-worlds-2min.mp4"),
+  option("output", "artifacts/tron-worlds-demo.mp4"),
 );
 await mkdir(dirname(output), { recursive: true });
 const score = resolve(root, "public/audio/score.mp3");
@@ -70,7 +70,7 @@ try {
     { width, height },
   );
   // Warm each world's shader pipeline before rendering the first output frame.
-  for (const time of [14, 43, 73, 102, start])
+  for (const time of [6, 16, 26, 41, start])
     await page.evaluate((t) => window.__TRON__.render(t), time);
   encoder = spawn(
     "ffmpeg",
@@ -104,6 +104,8 @@ try {
       "aac",
       "-b:a",
       "192k",
+      "-af",
+      `afade=t=out:st=${Math.max(0, seconds - 1.5)}:d=1.5`,
       "-movflags",
       "+faststart",
       "-metadata",
@@ -131,7 +133,7 @@ try {
   const total = Math.round(seconds * fps);
   const began = Date.now();
   const stills = new Set(
-    [0, 13, 51, 67.5, 110.5, 118].map((t) => Math.round((t - start) * fps)),
+    [0, 4, 16, 23, 38, 41].map((t) => Math.round((t - start) * fps)),
   );
   for (let frame = 0; frame < total; frame++) {
     if (encodingError) throw encodingError;

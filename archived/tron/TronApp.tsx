@@ -7,7 +7,12 @@ import {
   formatTime,
   frameAt,
 } from "./showcase/timeline";
-import { createGame, stepGame, type GameState } from "./showcase/simulation";
+import {
+  createGame,
+  stepGame,
+  NO_INPUT,
+  type GameState,
+} from "./showcase/simulation";
 import { LEVELS } from "./showcase/levels";
 import { RunBoard } from "./showcase/RunBoard";
 
@@ -37,20 +42,18 @@ export default function TronApp() {
   const directorRef = useRef<Director | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timeRef = useRef(0);
-  const playRef = useRef(
-    !matchMedia("(prefers-reduced-motion: reduce)").matches,
-  );
-  const rideRef = useRef(false);
-  const worldRef = useRef(0);
+  const playRef = useRef(true);
+  const rideRef = useRef(true);
+  const worldRef = useRef(3);
   const keysRef = useRef(new Set<string>());
-  const rideState = useRef(createGame(0));
+  const rideState = useRef(createGame(3));
   const stepAccumulator = useRef(0);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
   const [time, setTime] = useState(0);
   const [playing, setPlaying] = useState(playRef.current);
-  const [riding, setRiding] = useState(false);
-  const [selectedWorld, setSelectedWorld] = useState(0);
+  const [riding, setRiding] = useState(true);
+  const [selectedWorld, setSelectedWorld] = useState(3);
   const [sound, setSound] = useState(false);
   const [recording, setRecording] = useState(false);
   const [recordMessage, setRecordMessage] = useState("");
@@ -103,7 +106,8 @@ export default function TronApp() {
         rideState.current = createGame(index);
         stepAccumulator.current = 0;
         directorRef.current?.render(timeRef.current, index, rideState.current);
-      } else seek(WORLDS[index].start + 2.4);
+      } else seek(WORLDS[index].start + 0.8);
+      (document.activeElement as HTMLElement)?.blur();
     },
     [seek],
   );
@@ -127,7 +131,7 @@ export default function TronApp() {
         directorRef.current = director;
         await director.ready;
         if (disposed) return;
-        director.render(0);
+        director.render(0, worldRef.current, rideState.current);
         window.__TRON__ = {
           ready: true,
           game: () =>
@@ -165,7 +169,6 @@ export default function TronApp() {
         if (!playRef.current || document.hidden) return;
         timeRef.current += dt;
         if (rideRef.current) {
-          if (timeRef.current > DURATION) timeRef.current = 0;
           const keys = keysRef.current;
           const controls = {
             steer:
@@ -244,11 +247,8 @@ export default function TronApp() {
 
   useEffect(() => {
     const keyDown = (event: KeyboardEvent) => {
-      if (
-        event.target instanceof HTMLInputElement ||
-        event.target instanceof HTMLButtonElement
-      )
-        return;
+      if (event.target instanceof HTMLInputElement) return;
+      if (!rideRef.current && event.target instanceof HTMLButtonElement) return;
       if (
         ["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(
           event.code,
@@ -295,6 +295,21 @@ export default function TronApp() {
       await audioContextRef.current?.resume();
       syncAudio();
     } else audio.pause();
+  };
+  const startMission = () => {
+    if (rideState.current.status !== "ready")
+      rideState.current = createGame(worldRef.current);
+    stepAccumulator.current = 0;
+    stepGame(rideState.current, { ...NO_INPUT, throttle: true }, 1 / 120);
+    playRef.current = true;
+    setPlaying(true);
+    setTime(rideState.current.time);
+    (document.activeElement as HTMLElement)?.blur();
+    directorRef.current?.render(
+      timeRef.current,
+      worldRef.current,
+      rideState.current,
+    );
   };
   const toggleRide = () => {
     if (recordingRef.current) return;
@@ -373,10 +388,10 @@ export default function TronApp() {
         const url = URL.createObjectURL(blob),
           a = document.createElement("a");
         a.href = url;
-        a.download = `tron-worlds-2min.${mimeType.includes("mp4") ? "mp4" : "webm"}`;
+        a.download = `tron-worlds-demo.${mimeType.includes("mp4") ? "mp4" : "webm"}`;
         a.click();
         setTimeout(() => URL.revokeObjectURL(url), 10000);
-        setRecordMessage("Film saved.");
+        setRecordMessage("Demo saved.");
       };
       recorder.onerror = () => {
         recordingRef.current = false;
@@ -397,9 +412,12 @@ export default function TronApp() {
       playRef.current = true;
       setPlaying(true);
       syncAudio();
-      recordTimeoutRef.current = setTimeout(() => {
-        if (recorder.state === "recording") recorder.stop();
-      }, 180_000);
+      recordTimeoutRef.current = setTimeout(
+        () => {
+          if (recorder.state === "recording") recorder.stop();
+        },
+        (DURATION + 30) * 1000,
+      );
     } catch (err) {
       setRecordMessage(
         err instanceof Error ? err.message : "Recording could not start.",
@@ -422,7 +440,7 @@ export default function TronApp() {
             disabled={!ready || recording}
             onClick={toggleRide}
           >
-            {riding ? "↩ Back to film" : "▶ Play mission"}
+            {riding ? "▷ Watch demo · 44s" : "▶ Play game"}
           </button>
           <button
             className="button"
@@ -445,7 +463,7 @@ export default function TronApp() {
             disabled={!ready || recording}
             onClick={() => void recordFilm()}
           >
-            {recording ? "● Recording…" : "↓ Record film"}
+            {recording ? "● Recording…" : "↓ Record demo"}
           </button>
         </div>
       </header>
@@ -453,7 +471,7 @@ export default function TronApp() {
         <div className="viewer" ref={viewerRef}>
           <canvas
             ref={canvasRef}
-            aria-label="TRON Worlds: cinematic gameplay in four environments"
+            aria-label="TRON Worlds: playable lightcycle missions"
             onClick={(event) => {
               if (riding || recording || frameAt(timeRef.current).zoom > 0.1)
                 return;
@@ -483,7 +501,9 @@ export default function TronApp() {
               </span>
               <h2>
                 {rideState.current.status === "ready"
-                  ? "Your turn."
+                  ? selectedWorld === 3
+                    ? "Survive the arena."
+                    : "Start your mission."
                   : rideState.current.status === "won"
                     ? "Mission complete."
                     : "Rider down."}
@@ -495,9 +515,17 @@ export default function TronApp() {
               </p>
               <p className="mission-help">
                 {rideState.current.status === "ready"
-                  ? "Hold W or ↑ to launch. Steer freely with A / D."
+                  ? "A / D steer · W accelerates · Shift boosts · Space jumps or drifts."
                   : `${rideState.current.score.toLocaleString()} points · ${rideState.current.time.toFixed(1)} seconds`}
               </p>
+              {rideState.current.status === "ready" && (
+                <button
+                  className="button primary start-mission"
+                  onClick={startMission}
+                >
+                  Start mission
+                </button>
+              )}
               {rideState.current.status !== "ready" && (
                 <button
                   className="button primary"
@@ -550,9 +578,9 @@ export default function TronApp() {
       </div>
       {riding && <RunBoard game={rideState.current} />}
       <footer className="transport">
-        <div className="scrubber">
+        <div className={`scrubber ${riding ? "game-scrubber" : ""}`}>
           <span className="timecode">
-            {formatTime(time)} <span>/ 02:00</span>
+            {formatTime(time)} <span>/ {formatTime(DURATION)}</span>
           </span>
           <input
             className="timeline"
@@ -573,8 +601,16 @@ export default function TronApp() {
               className="icon-button"
               disabled={!ready || recording}
               onClick={togglePlaying}
-              aria-label={playing ? "Pause film" : "Play film"}
-              title="Play / pause (Space)"
+              aria-label={
+                riding
+                  ? playing
+                    ? "Pause game"
+                    : "Resume game"
+                  : playing
+                    ? "Pause film"
+                    : "Play film"
+              }
+              title={riding ? "Pause game (P)" : "Play / pause (Space)"}
             >
               {playing ? "Ⅱ" : "▶"}
             </button>
@@ -631,7 +667,7 @@ export default function TronApp() {
             ))}
           </nav>
           <span className="key-hint">
-            <kbd>Space</kbd> pause <kbd>1–4</kbd> worlds
+            <kbd>{riding ? "P" : "Space"}</kbd> pause <kbd>1–4</kbd> worlds
           </span>
         </div>
       </footer>

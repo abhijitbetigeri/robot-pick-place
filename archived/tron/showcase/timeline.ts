@@ -1,4 +1,4 @@
-export const DURATION = 120;
+export const DURATION = 44;
 
 export const WORLDS = [
   {
@@ -9,8 +9,9 @@ export const WORLDS = [
     mechanic: "Urban pursuit",
     detail: "Thread the city. Carry your momentum.",
     color: "#a2d3e4",
-    start: 8,
-    end: 33,
+    start: 2,
+    end: 10,
+    clipStart: 3,
     speed: 216,
   },
   {
@@ -21,8 +22,9 @@ export const WORLDS = [
     mechanic: "Timed canyon escape",
     detail: "Open the throttle. Leave the dust behind.",
     color: "#ecc395",
-    start: 35,
-    end: 60,
+    start: 10,
+    end: 20,
+    clipStart: 12.5,
     speed: 342,
   },
   {
@@ -33,8 +35,9 @@ export const WORLDS = [
     mechanic: "Broken-bridge traversal",
     detail: "Find your line above the frozen world.",
     color: "#b4dadd",
-    start: 62,
-    end: 87,
+    start: 20,
+    end: 34,
+    clipStart: 3,
     speed: 248,
   },
   {
@@ -45,8 +48,9 @@ export const WORLDS = [
     mechanic: "Light-trail combat",
     detail: "Outmaneuver the pack. Close the trap.",
     color: "#c6c1e5",
-    start: 89,
-    end: 114,
+    start: 34,
+    end: 44,
+    clipStart: 3.2,
     speed: 268,
   },
 ] as const;
@@ -73,16 +77,17 @@ export function frameAt(seconds: number): FrameState {
   const time = clamp(Number.isFinite(seconds) ? seconds : 0, 0, DURATION);
   for (let i = 0; i < WORLDS.length; i++) {
     const world = WORLDS[i];
-    if (time >= world.start && time <= world.end) {
-      const chapterTime = time - world.start;
-      const zoom = Math.min(
-        ease(chapterTime / 1.8),
-        ease((world.end - time) / 1.8),
-      );
+    if (time >= world.start && (time < world.end || i === 3)) {
+      const local = time - world.start;
+      // The arena cuts forward from the first elimination to the final trap.
+      // Every source time increases: no laps, reverse seeks, or repeated shots.
+      const chapterTime =
+        i === 3 && local >= 4 ? 19 + local - 4 : world.clipStart + local;
+      const zoom = ease(local / 0.65);
       return { time, active: i, zoom, chapterTime, closing: false };
     }
   }
-  return { time, active: -1, zoom: 0, chapterTime: 0, closing: time >= 114 };
+  return { time, active: -1, zoom: 0, chapterTime: 0, closing: false };
 }
 
 export function formatTime(time: number) {

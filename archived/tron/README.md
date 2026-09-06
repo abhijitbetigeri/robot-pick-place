@@ -1,6 +1,6 @@
 # TRON / Worlds
 
-A standalone lightcycle showcase with a two-minute director's cut, four World Labs environments, an original electronic score, and four playable missions. Generated assets are bundled, so running the game does not require an API key or an external download.
+A standalone lightcycle showcase with a 44-second demo, four World Labs environments, an original electronic score, and four playable missions. Generated assets are bundled, so running the game does not require an API key or an external download.
 
 ## Run
 
@@ -9,41 +9,40 @@ npm ci
 npm run dev
 ```
 
-Open **http://localhost:4173**. The film starts muted. Enable **Sound on** for the score. Click an environment or press **1–4** to jump to its chapter. **Space** pauses the film, the timeline scrubs, and **Fullscreen** hides the application controls.
+Open **http://localhost:4173**. The app opens in the playable arena. Click **Start mission**, then steer with A/D or the arrow keys. Select any of the four worlds from the tabs or keys **1–4**. **Watch demo · 44s** opens the short film; it runs once and stops. Enable **Sound on** for the score.
 
-**Play mission** gives you free steering. Hold W / ↑ to launch and accelerate; A/D or ←/→ steer; S / ↓ brakes; Shift spends boost energy. Space jumps in Cryo Pass and tightens turns in the other worlds. R restarts, 1–4 changes missions, and Escape returns to the film. Touch controls appear on touch devices.
+The game has free steering and continuous forward motion after starting. Hold W / ↑ to launch and accelerate; A/D or ←/→ steer; S / ↓ brakes; Shift spends boost energy. Space jumps in Cryo Pass and tightens turns in the other worlds. R restarts, P pauses, 1–4 changes missions, and Escape opens the film. Touch controls appear on touch devices.
 
 City: follow five checkpoints through right-angle service streets before pursuit catches up. Desert: slalom around rocks, save boost, and clear two closing shutters. Ice: jump two missing bridge spans; boost for the second gap. Arena: survive 45 seconds or eliminate all three rivals with lethal light walls.
 
-Movement runs at a fixed 120 Hz. Swept collision checks include the front of the bike, so boost cannot tunnel through a trail. Contact kills the rider; eliminated riders stay dead, and their walls dissolve after 1.2 seconds. Ice platforms and gaps share the exact geometry used by the simulation. The film has choreographed trajectories and cameras; its arena eliminations are calculated using the same wall collision routine as the playable game. It is not a recording of human input.
+Movement runs at a fixed 120 Hz. Swept collision checks include the front of the bike, so boost cannot tunnel through a trail. Contact kills the rider; eliminated riders stay dead, and their walls dissolve after 1.2 seconds. Ice platforms and gaps share the exact geometry used by the simulation. Ribbons have thickness and a bright top edge, and the camera sits off centre so straight trails remain visible. The film has choreographed trajectories and cameras; its arena eliminations are calculated using the same wall collision routine as the playable game. It is not a recording of human input.
 
 ## The film
 
 | Time | Scene | Featured action |
 | --- | --- | --- |
-| 00:00–00:08 | Four-view overview | Animated 2×2 world selection |
-| 00:08–00:33 | Meridian city | Service-street pursuit and chained turns |
-| 00:35–01:00 | Solar wasteland | Slalom and two timed blast shutters |
-| 01:02–01:27 | Cryo pass | Two real gaps, launches, and landings |
-| 01:29–01:54 | The core | Three collision-driven eliminations in an open arena |
-| 01:54–02:00 | Closing overview | Return to all four environments |
+| 00:00–00:02 | Four-view overview | Brief 2×2 introduction |
+| 00:02–00:10 | Meridian city | Two chained service-street turns |
+| 00:10–00:20 | Solar wasteland | Boost through two closing shutters |
+| 00:20–00:34 | Cryo pass | Launch and land across both gaps |
+| 00:34–00:44 | The core | First interception, then a forward cut to the final trap |
 
-Each chapter expands from its original tile, blends between establishing, chase, and side cameras, then returns to the overview. Every scene, camera, trail, and effect is deterministic when seeking the film.
+Each world expands from its tile once. Source times only advance: the demo has no repeated laps, looping overview animation, or closing replay. Every scene, camera, trail, and effect is deterministic when seeking.
 
 ## Export MP4
 
-The completed film is saved to `artifacts/tron-worlds-2min.mp4`. To regenerate it, leave the development server running and use another terminal:
+The export writes `artifacts/tron-worlds-demo.mp4`. To regenerate it, leave the development server running and use another terminal:
 
 ```sh
 npx playwright install chromium
 npm run capture
 ```
 
-Requires **FFmpeg** on PATH. Default output is 1920×1080, 30 fps, H.264 with AAC audio, exactly 120 seconds. Capture advances one frame at a time, so output timing does not depend on the browser's real-time frame rate. The score is bundled in `public/audio/score.mp3`.
+Requires **FFmpeg** on PATH. Default output is 1920×1080, 30 fps, H.264 with AAC audio, exactly 44 seconds. Capture advances one frame at a time, so output timing does not depend on the browser's real-time frame rate. The score is bundled in `public/audio/score.mp3`.
 
 Use an installed Chrome with `--browser /path/to/chrome`. `--width`, `--height`, `--fps`, `--start`, `--seconds`, and `--output` support alternate exports and short review clips. `--url` changes the running app URL. `CHROME_PATH` can also select the executable. On Linux with a compatible NVIDIA driver, `--vulkan` selects the tested accelerated capture path.
 
-The app's **Record film** button offers a real-time browser recording. It includes the soundtrack and downloads MP4 or WebM depending on the browser's available encoder. Keep the tab visible during recording. The command-line export is the reproducible delivery workflow.
+The app's **Record demo** button offers a real-time browser recording. It includes the soundtrack and downloads MP4 or WebM depending on the browser's available encoder. Keep the tab visible during recording. The command-line export is the reproducible delivery workflow.
 
 ## Development
 

@@ -136,11 +136,7 @@ export class Director {
     for (let i = 0; i < 4; i++) {
       const active = i === state.active;
       if (!active && state.zoom >= 0.999) continue;
-      const chapter = active
-        ? state.chapterTime
-        : time >= 114
-          ? 8 + (time - 114) * 1.7
-          : (time + 4 + i * 3) % 24;
+      const chapter = active ? state.chapterTime : Math.min(time, 2);
       const world = this.worlds[i];
       world.update(time, chapter, !active || state.zoom < 0.15);
       const zoom = active ? state.zoom : 0;
@@ -171,7 +167,7 @@ export class Director {
     if (manualWorld >= 0) {
       state.active = manualWorld;
       state.zoom = 1;
-      state.chapterTime = ride ? 6 : 5 + (time % 17);
+      state.chapterTime = ride ? 6 : Math.min(25, time);
       state.closing = false;
     }
     const ctx = this.ctx;
@@ -185,7 +181,7 @@ export class Director {
     ctx.textAlign = "right";
     this.text(
       this.worlds.every((w) => w.environmentReady)
-        ? "WORLD LABS ENVIRONMENTS    /    02:00"
+        ? `WORLD LABS ENVIRONMENTS    /    ${formatTime(DURATION)}`
         : "ENVIRONMENTS GENERATING    /    PREVIEW",
       1862,
       53,
@@ -240,11 +236,7 @@ export class Director {
       const world = this.worlds[i];
       world.update(
         time,
-        active
-          ? state.chapterTime
-          : time >= 114
-            ? 8 + (time - 114) * 1.7
-            : (time + 4 + i * 3) % 24,
+        active ? state.chapterTime : Math.min(time, 2),
         !active || z < 0.15,
         active ? ride : undefined,
       );
