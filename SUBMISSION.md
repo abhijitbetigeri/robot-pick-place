@@ -2,6 +2,14 @@
 
 **One line:** a real-estate listing becomes a metric 3D home, you stage furniture in the browser with teammates, and a mobile manipulator carries out a household chore in that exact room in MuJoCo, with the before/after state recorded and machine-checked.
 
+## Submission handoff
+
+npow owns the event submission. This document and `DEMO_RUNBOOK.md` are the repository handoff; publishing them does not submit the event form.
+
+- **Single-file video:** [demo_reel.mp4](public/assets/tasks/demo_reel.mp4), 44 seconds, combines title cards, the mobile-manipulator book transfer, and the textured G1 room.
+- **Latest visual showcase:** [g1_cozy.mp4](public/assets/tasks/g1_cozy.mp4), 1920×1080 at 30 fps, 12.3 seconds. The real G1 model moves a book between room shelves using scripted kinematic playback in a textured Marble room; this is not a learned or dynamically balanced walking policy.
+- **Measured chore evidence:** [scene_bedroom_tidy.mp4](public/assets/tasks/scene_bedroom_tidy.mp4) with its [result trace](public/assets/tasks/scene_bedroom_tidy.json). The toy moves 2.18 m from the table into the basket; horizontal containment, vertical containment, and rest predicates all pass. This uses the mobile manipulator and a different room from the G1 showcase.
+
 ## Problem, track, interaction loop
 - **Problem:** household robots need training environments that look like real homes, not lab tables. Listing photos and floor plans are the largest source of real-home layouts on earth, but they are not simulation-ready.
 - **Track:** Physical AI & Simulation (robotics, digital twins, visible state change).
@@ -16,12 +24,12 @@
 | 0:55 | "Now a robot does a chore in *this* room." | Run task on the staged scene (`scripts/sim_from_scene.py --share-id <id> --marble <world>`) |
 | 1:15 | "Book leaves shelf A, crosses the doorway, lands on shelf B. The trace says success." | Video `public/assets/tasks/scene_sim.mp4`, trace JSON with per-phase poses and `success` |
 | 1:35 | "Second chore, same robot: the toy on the coffee table goes into the basket, and the predicate checks it is inside and at rest." | `public/assets/tasks/tidy_basket.mp4` + `.json` (`scripts/task_tidy_basket.py`) |
-| 1:40 | "Same room, real humanoid: the Unitree G1 walks the generated room and moves the book. Scripted gait on the real model, replayed inside the photoreal splat." | `scripts/g1_book_task.py`, `replay.html` (`src/replay/main.ts`), trace `public/assets/tasks/g1_book.json` |
+| 1:40 | "A second generated room, with a real humanoid model: the Unitree G1 moves a book between shelves. This is scripted kinematic playback, rendered inside the textured Marble room." | `public/assets/tasks/g1_cozy.mp4` and `g1_cozy.json`; native rendering through `scripts/g1_book_task.py` and `scripts/marble_textured.py` |
 | 1:50 | "Furniture came from Mint and Tripo as GLB, straight into the sim." | Asset drawer (`src/realestate/components/AssetLibraryDrawer.tsx`; `scripts/mint_furniture.py`, `scripts/tripo_furniture.py`, `scripts/assets_to_sim.py`) |
 | 1:58 | "Reset, stage differently, run again." | Reset control; second run |
 
 **Reset path:** reload the shared scene (Convex) or re-run the script; outputs are overwritten in `public/assets/tasks/`.
-**Fallback recordings (committed, play if the live run stalls):** `public/assets/tasks/scene_demo.mp4` (staged room → robot task), `public/assets/tasks/scene_bedroom.mp4`, `public/assets/tasks/book_transfer.mp4`, `public/assets/tasks/tidy_basket.mp4`, `public/assets/tasks/scene_bedroom_tidy.mp4`. Cold-start commands for every path: `DEMO_RUNBOOK.md`.
+**Fallback recordings (committed, play if the live run stalls):** start with `public/assets/tasks/demo_reel.mp4`, or play individual clips: `g1_cozy.mp4`, `scene_demo.mp4` (staged room → robot task), `scene_bedroom.mp4`, `book_transfer.mp4`, `tidy_basket.mp4`, and `scene_bedroom_tidy.mp4` in the same directory. Cold-start commands for the offline mobile-manipulator chores: `DEMO_RUNBOOK.md`. The committed G1 clip is playable offline; re-rendering its textured room requires the separately generated mesh and texture assets.
 
 ## What each event technology actually does in this repo
 | Technology | Role in the code today | Files |

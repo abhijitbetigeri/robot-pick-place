@@ -1,7 +1,9 @@
 # Demo runbook
 
 Everything a judge needs to see, and how to get it back when something breaks.
-The whole demo runs offline: no Convex, no API keys, no network.
+The bundled chore runs and committed videos work offline once dependencies are installed. Live studio sharing requires Convex (section 6).
+
+For npow's submission handoff, play `public/assets/tasks/demo_reel.mp4` (44 seconds), or `public/assets/tasks/g1_cozy.mp4` for the latest 1080p textured-room showcase. The G1 clip is scripted kinematic playback in a separate room; use `scene_bedroom_tidy.mp4` and its JSON trace for measured physical task evidence. The G1 recording is bundled, but regenerating it requires separately generated textured mesh assets. Submission text and media links are in `SUBMISSION.md`.
 
 ---
 
