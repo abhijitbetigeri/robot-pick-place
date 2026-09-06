@@ -3,7 +3,7 @@
 *How we put a humanoid robot to work inside a home generated from real-estate photos — in one day, and what broke along the way.*
 
 **Spatial Intelligence + Generative 3D Hackathon · San Francisco · 5 September 2026**
-**Team:** npow · abhijitbetigeri · cosmicz · **Track:** Physical AI & Simulation
+**Track:** Physical AI & Simulation
 
 ---
 
