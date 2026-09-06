@@ -1,6 +1,7 @@
 ## Submission — Spatial Intelligence + Generative 3D Hackathon (SF, 5 Sep 2026)
 
-**▶ Submission video:** [household_humanoid_presentation.mp4](https://raw.githubusercontent.com/abhijitbetigeri/robot-pick-place/main/public/assets/tasks/household_humanoid_presentation.mp4) (47 s — opens and plays directly)
+**▶ Watch the submission video:** https://abhijitbetigeri.github.io/robot-pick-place/ (47 s, plays in the browser)
+Direct download: [household_humanoid_presentation.mp4](https://github.com/abhijitbetigeri/robot-pick-place/releases/download/v1.0/household_humanoid_presentation.mp4)
 Short reel: [demo_reel.mp4](https://raw.githubusercontent.com/abhijitbetigeri/robot-pick-place/main/public/assets/tasks/demo_reel.mp4) · raw robot clip: [g1_cozy.mp4](https://raw.githubusercontent.com/abhijitbetigeri/robot-pick-place/main/public/assets/tasks/g1_cozy.mp4)
 
 A household humanoid (real 29-DOF Unitree G1) moves a book from one shelf to the empty shelf across a room
