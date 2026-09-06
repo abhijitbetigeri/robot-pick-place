@@ -141,3 +141,33 @@ The studio will be available on `http://localhost:3001` (or via your configured 
 
 ## 📜 License
 MIT License.
+
+## Live demo — shared staging with Convex, then Run
+
+The studio is a Convex-backed multiplayer stage: every furniture placement is a live document, so two
+browsers see each other's drags immediately. Publishing a scene gives it a `shareId`; the sim server
+turns that `shareId` into a MuJoCo rollout.
+
+```bash
+npm install
+npx convex dev                       # creates/links a deployment, writes .env.local
+npm run dev                          # studio on http://localhost:3001
+python scripts/sim_server.py         # MuJoCo runner behind /api/run (needs the Python env below)
+```
+
+Then in the browser:
+
+1. **Share Live Scene** (top bar, amber button) — publishes the layout to Convex and puts `?s=<shareId>` in the URL.
+2. Open that URL in a second window (or send it to someone) — drag furniture in one, it moves in the other.
+3. **Run chore** (bottom-left panel, appears once shared) — the server pulls the scene by `shareId`,
+   runs the robot task, and links the video and trace.
+
+Python env: `mujoco`, `numpy`, `imageio`, `imageio-ffmpeg`, `trimesh`, `requests` (see `requirements.txt`).
+If port 8765 is taken on your machine, run the server on another port and set `SIM_SERVER_PORT` in
+`.env.development.local`; the Vite proxy reads it.
+
+Command-line equivalents, no browser needed:
+```bash
+python scripts/sim_from_scene.py --share-id bedroom --marble new_world   # scene from Convex
+python scripts/g1_book_task.py --scene-file public/assets/tasks/cozy_scene.json --marble room2 --follow
+```
